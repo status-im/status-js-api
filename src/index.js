@@ -4,72 +4,92 @@ const { utils: { asciiToHex, hexToAscii, sha3  }  } = Web3;
 const POW_TIME = 1;
 const TTL = 10;
 const POW_TARGET = 0.002;
-const CHANNEL_NAME ="mytest"
-const CHANNEL = Web3.utils.sha3(CHANNEL_NAME).slice(0, 10);
 
-function createStatusPayload() {
+function createStatusPayload(msg) {
   let tag = '~#c4';
-  let content = 'Hello everyone, it\s status js';
+  let content = msg;
   let messageType = '~:public-group-user-message';
   let clockValue = (new Date().getTime()) * 100;
   let contentType = 'text/plain';
   let timestamp = new Date().getTime();
   return asciiToHex(
-   JSON.stringify([
-    tag,
-    [
-     content,
-     contentType,
-     messageType,
-     clockValue,
-     timestamp,
-    ],
-   ]),
+    JSON.stringify([
+      tag,
+      [content, contentType, messageType, clockValue, timestamp],
+    ]),
   );
 }
 
-(async () => {
+class StatusJS {
 
-  let web3 = new Web3();
-  web3.setProvider(new Web3.providers.WebsocketProvider('ws://localhost:8546', {headers: {Origin: "statusjs"}}));
+  constructor() {
+    this.channels = {};
+  }
 
- await web3.shh.setMinPoW(POW_TARGET);
+  async connect(url) {
+    let web3 = new Web3();
+    web3.setProvider(new Web3.providers.WebsocketProvider(url, {headers: {Origin: "statusjs"}}));
+    this.shh = web3.shh;
+    await web3.shh.setMinPoW(POW_TARGET);
+    this.sig = await web3.shh.newKeyPair();
+  }
 
-  let keys = {};
+  async joinChat(channelName) {
+    let channelKey = await this.shh.generateSymKeyFromPassword(channelName);
+    this.channels[channelName] = {
+      channelName,
+      channelKey,
+      channelCode: Web3.utils.sha3(channelName).slice(0, 10)
+    }
+  }
 
-  // keys.symKeyID = await web3.shh.newSymKey();
-  // keys.sig = await web3.shh.newKeyPair();
-  keys.symKeyID = await web3.shh.generateSymKeyFromPassword(CHANNEL_NAME);
-  keys.sig = await web3.shh.newKeyPair();
+  leaveChat(channelName) {
+    this.channels[channelName].unsubscribe();
+    delete this.channels[channelName];
+  }
 
-  console.dir("keys generated");
-  console.dir(keys);
+  isSubscribedTo(channelName) {
+    return !!this.channels[channelName];
+  }
 
-  subscription = web3.shh.subscribe("messages", {
-    minPow: POW_TARGET,
-    symKeyID: keys.symKeyID,
-    topics: [CHANNEL]
-  }).on('data', (data) => {
-     console.dir("message received!");
-     console.dir(data);
-     console.dir(JSON.parse(hexToAscii(data.payload)));
-  }).on('error', () => {
-     console.dir("error receiving message");
-  });
+  onMessage(channelName, cb) {
+		if (!this.channels[channelName]) {
+      return cb("unknown channel: " + channelName);
+		}
+    this.channels[channelName].subscription = this.shh.subscribe("messages", {
+      minPow: POW_TARGET,
+      symKeyID: this.channels[channelName].channelKey,
+      topics: [this.channels[channelName].channelCode]
+    }).on('data', (data) => {
+      cb(null, hexToAscii(data.payload));
+    }).on('error', (err) => {
+      cb(err);
+    });
+  }
 
-  web3.shh.post({
-    symKeyID: keys.symKeyID, // encrypts using the sym key ID
-    sig: keys.sig, // signs the message using the keyPair ID
-    ttl: TTL,
-    topic: CHANNEL,
-    payload: createStatusPayload(),
-    powTime: POW_TIME,
-    powTarget: POW_TARGET
-  }).then(() => {
-    console.dir('message sent!');
- }).catch((e) => {
-    console.dir("error sending message");
-    console.dir(e);
- });
+	sendMessage(channelName, msg, cb) {
+		if (!this.channels[channelName]) {
+			return cb("unknown channel: " + channelName);
+		}
+		this.shh.post({
+			symKeyID: this.channels[channelName].channelKey,
+			sig: this.sig,
+			ttl: TTL,
+			topic: this.channels[channelName].channelCode,
+			payload: createStatusPayload(msg),
+			powTime: POW_TIME,
+			powTarget: POW_TARGET
+		}).then(() => {
+			if (!cb) return;
+			cb(null, true);
+		}).catch((e) => {
+			if (!cb) return;
+			cb(e, false);
+		});
+	}
 
-})()
+}
+
+module.exports = StatusJS;
+
+
