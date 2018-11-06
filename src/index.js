@@ -4,11 +4,12 @@ const { utils: { asciiToHex, hexToAscii, sha3  }  } = Web3;
 const POW_TIME = 1;
 const TTL = 10;
 const POW_TARGET = 0.002;
-const CHANNEL = Web3.utils.sha3("status").slice(0, 10);
+const CHANNEL_NAME ="mytest"
+const CHANNEL = Web3.utils.sha3(CHANNEL_NAME).slice(0, 10);
 
 function createStatusPayload() {
   let tag = '~#c4';
-  let content = 'Hello everyone';
+  let content = 'Hello everyone, it\s status js';
   let messageType = '~:public-group-user-message';
   let clockValue = (new Date().getTime()) * 100;
   let contentType = 'text/plain';
@@ -36,7 +37,9 @@ function createStatusPayload() {
 
   let keys = {};
 
-  keys.symKeyID = await web3.shh.newSymKey();
+  // keys.symKeyID = await web3.shh.newSymKey();
+  // keys.sig = await web3.shh.newKeyPair();
+  keys.symKeyID = await web3.shh.generateSymKeyFromPassword(CHANNEL_NAME);
   keys.sig = await web3.shh.newKeyPair();
 
   console.dir("keys generated");
@@ -49,6 +52,7 @@ function createStatusPayload() {
   }).on('data', (data) => {
      console.dir("message received!");
      console.dir(data);
+     console.dir(JSON.parse(hexToAscii(data.payload)));
   }).on('error', () => {
      console.dir("error receiving message");
   });
