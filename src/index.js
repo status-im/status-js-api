@@ -34,13 +34,14 @@ class StatusJS {
     this.sig = await web3.shh.newKeyPair();
   }
 
-  async joinChat(channelName) {
+  async joinChat(channelName, cb) {
     let channelKey = await this.shh.generateSymKeyFromPassword(channelName);
     this.channels[channelName] = {
       channelName,
       channelKey,
       channelCode: Web3.utils.sha3(channelName).slice(0, 10)
     }
+    if (cb) cb();
   }
 
   leaveChat(channelName) {
