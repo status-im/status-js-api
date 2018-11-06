@@ -14,7 +14,6 @@ function createStatusPayload(
 		clockValue = (new Date().getTime()) * 100,
 		contentType = 'text/plain',
 		timestamp = new Date().getTime(),
-
 	} = {},
 ) {
 	return asciiToHex(
@@ -36,6 +35,8 @@ function createStatusPayload(
   let web3 = new Web3();
   web3.setProvider(new Web3.providers.WebsocketProvider('ws://localhost:8546', {headers: {Origin: "http://localhost:8080"}}));
 
+	await web3.shh.setMinPoW(POW_TARGET);
+
   let keys = {};
 
   keys.symKeyID = await web3.shh.newSymKey();
@@ -45,11 +46,14 @@ function createStatusPayload(
   console.dir(keys);
 
 	subscription = web3.shh.subscribe("messages", {
+    minPow: POW_TARGET,
 		symKeyID: keys.symKeyID,
 		topics: [CHANNEL]
 	}).on('data', (data) => {
     console.dir("message received!");
     console.dir(data);
+	}).on('error', () => {
+    console.dir("error receiving message");
 	});
 
   web3.shh.post({
@@ -62,6 +66,9 @@ function createStatusPayload(
     powTarget: POW_TARGET
   }).then(() => {
     console.dir('message sent!');
-  })
+	}).catch((e) => {
+    console.dir("error sending message");
+    console.dir(e);
+	});
 
 })()
