@@ -30,7 +30,7 @@ function createStatusPayload() {
 (async () => {
 
   let web3 = new Web3();
-  web3.setProvider(new Web3.providers.WebsocketProvider('ws://localhost:8546', {headers: {Origin: "http://localhost:8080"}}));
+  web3.setProvider(new Web3.providers.WebsocketProvider('ws://localhost:8546', {headers: {Origin: "statusjs"}}));
 
  await web3.shh.setMinPoW(POW_TARGET);
 
