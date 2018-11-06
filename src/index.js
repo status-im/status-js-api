@@ -6,28 +6,25 @@ const TTL = 10;
 const POW_TARGET = 0.002;
 const CHANNEL = Web3.utils.sha3("status").slice(0, 10);
 
-function createStatusPayload(
-	{
-		tag = '~#c4',
-		content = 'Hello everyone',
-		messageType = '~:public-group-user-message',
-		clockValue = (new Date().getTime()) * 100,
-		contentType = 'text/plain',
-		timestamp = new Date().getTime(),
-	} = {},
-) {
-	return asciiToHex(
-		JSON.stringify([
-			tag,
-			[
-				content,
-				contentType,
-				messageType,
-				clockValue,
-				timestamp,
-			],
-		]),
-	);
+function createStatusPayload() {
+  let tag = '~#c4';
+  let content = 'Hello everyone';
+  let messageType = '~:public-group-user-message';
+  let clockValue = (new Date().getTime()) * 100;
+  let contentType = 'text/plain';
+  let timestamp = new Date().getTime();
+  return asciiToHex(
+   JSON.stringify([
+    tag,
+    [
+     content,
+     contentType,
+     messageType,
+     clockValue,
+     timestamp,
+    ],
+   ]),
+  );
 }
 
 (async () => {
@@ -35,7 +32,7 @@ function createStatusPayload(
   let web3 = new Web3();
   web3.setProvider(new Web3.providers.WebsocketProvider('ws://localhost:8546', {headers: {Origin: "http://localhost:8080"}}));
 
-	await web3.shh.setMinPoW(POW_TARGET);
+ await web3.shh.setMinPoW(POW_TARGET);
 
   let keys = {};
 
@@ -45,30 +42,30 @@ function createStatusPayload(
   console.dir("keys generated");
   console.dir(keys);
 
-	subscription = web3.shh.subscribe("messages", {
+  subscription = web3.shh.subscribe("messages", {
     minPow: POW_TARGET,
-		symKeyID: keys.symKeyID,
-		topics: [CHANNEL]
-	}).on('data', (data) => {
-    console.dir("message received!");
-    console.dir(data);
-	}).on('error', () => {
-    console.dir("error receiving message");
-	});
+    symKeyID: keys.symKeyID,
+    topics: [CHANNEL]
+  }).on('data', (data) => {
+     console.dir("message received!");
+     console.dir(data);
+  }).on('error', () => {
+     console.dir("error receiving message");
+  });
 
   web3.shh.post({
     symKeyID: keys.symKeyID, // encrypts using the sym key ID
     sig: keys.sig, // signs the message using the keyPair ID
     ttl: TTL,
     topic: CHANNEL,
-    payload: createStatusPayload("hello there"),
+    payload: createStatusPayload(),
     powTime: POW_TIME,
     powTarget: POW_TARGET
   }).then(() => {
     console.dir('message sent!');
-	}).catch((e) => {
+ }).catch((e) => {
     console.dir("error sending message");
     console.dir(e);
-	});
+ });
 
 })()
