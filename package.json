@@ -1,0 +1,22 @@
+{
+  "name": "status-js",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/status-im/status-js.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/status-im/status-js/issues"
+  },
+  "homepage": "https://github.com/status-im/status-js#readme",
+  "dependencies": {
+    "web3": "^1.0.0-beta.36"
+  }
+}
