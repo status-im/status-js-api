@@ -2,7 +2,7 @@ var StatusJS = require('./src/index.js');
 
 (async () => {
 var status = new StatusJS();
-  status.connect("ws://localhost:8546");
+  await status.connect("ws://localhost:8546");
 
   await status.joinChat("mytest");
   await status.joinChat("mytest2");
