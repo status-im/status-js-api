@@ -6,12 +6,12 @@ const POW_TIME = 1;
 const TTL = 10;
 const POW_TARGET = 0.002;
 
-function createStatusPayload(msg) {
+function createStatusPayload(msg, isJson) {
   let tag = '~#c4';
   let content = msg;
   let messageType = '~:public-group-user-message';
   let clockValue = (new Date().getTime()) * 100;
-  let contentType = 'text/plain';
+  let contentType = (isJson ? 'content/json' : 'text/plain');
   let timestamp = new Date().getTime();
   return asciiToHex(
     JSON.stringify([
@@ -55,9 +55,9 @@ class StatusJS {
   }
 
   onMessage(channelName, cb) {
-		if (!this.channels[channelName]) {
+    if (!this.channels[channelName]) {
       return cb("unknown channel: " + channelName);
-		}
+    }
     this.channels[channelName].subscription = this.shh.subscribe("messages", {
       minPow: POW_TARGET,
       symKeyID: this.channels[channelName].channelKey,
@@ -70,26 +70,47 @@ class StatusJS {
     });
   }
 
-	sendMessage(channelName, msg, cb) {
-		if (!this.channels[channelName]) {
-			return cb("unknown channel: " + channelName);
-		}
-		this.shh.post({
-			symKeyID: this.channels[channelName].channelKey,
-			sig: this.sig,
-			ttl: TTL,
-			topic: this.channels[channelName].channelCode,
-			payload: createStatusPayload(msg),
-			powTime: POW_TIME,
-			powTarget: POW_TARGET
-		}).then(() => {
-			if (!cb) return;
-			cb(null, true);
-		}).catch((e) => {
-			if (!cb) return;
-			cb(e, false);
-		});
-	}
+  sendMessage(channelName, msg, cb) {
+    if (!this.channels[channelName]) {
+      return cb("unknown channel: " + channelName);
+    }
+    this.shh.post({
+      symKeyID: this.channels[channelName].channelKey,
+      sig: this.sig,
+      ttl: TTL,
+      topic: this.channels[channelName].channelCode,
+      payload: createStatusPayload(msg),
+      powTime: POW_TIME,
+      powTarget: POW_TARGET
+    }).then(() => {
+      if (!cb) return;
+      cb(null, true);
+    }).catch((e) => {
+      if (!cb) return;
+      cb(e, false);
+    });
+  }
+
+  sendJsonMessage(channelName, msg, cb) {
+    if (!this.channels[channelName]) {
+      return cb("unknown channel: " + channelName);
+    }
+    this.shh.post({
+      symKeyID: this.channels[channelName].channelKey,
+      sig: this.sig,
+      ttl: TTL,
+      topic: this.channels[channelName].channelCode,
+      payload: createStatusPayload(JSON.stringify(msg), true),
+      powTime: POW_TIME,
+      powTarget: POW_TARGET
+    }).then(() => {
+      if (!cb) return;
+      cb(null, true);
+    }).catch((e) => {
+      if (!cb) return;
+      cb(e, false);
+    });
+  }
 
 }
 
