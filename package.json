@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/status-im/status-js#readme",
   "dependencies": {
+    "chance": "^1.0.16",
     "web3": "^1.0.0-beta.36"
   }
 }

@@ -1,4 +1,5 @@
 const Web3 = require('web3');
+const utils = require('./utils.js');
 const { utils: { asciiToHex, hexToAscii, sha3  }  } = Web3;
 
 const POW_TIME = 1;
@@ -62,7 +63,8 @@ class StatusJS {
       symKeyID: this.channels[channelName].channelKey,
       topics: [this.channels[channelName].channelCode]
     }).on('data', (data) => {
-      cb(null, hexToAscii(data.payload));
+      let username = utils.generateUsernameFromSeed(data.sig);
+      cb(null, {payload: hexToAscii(data.payload), data: data, username: username});
     }).on('error', (err) => {
       cb(err);
     });
