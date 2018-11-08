@@ -164,27 +164,55 @@ class StatusJS {
     });
   }
 
-  sendJsonMessage(channelName, msg, cb) {
-    if (!this.channels[channelName]) {
-      return cb("unknown channel: " + channelName);
+
+
+
+
+
+  sendJsonMessage(destination, msg, cb) {
+    if (CONTACT_CODE_REGEXP.test(destination)) {
+      this.shh.post({
+        pubKey: destination,
+        sig: this.sig,
+        ttl: TTL,
+        topic: CONTACT_DISCOVERY_TOPIC,
+        payload: createStatusPayload(msg, USER_MESSAGE),
+        powTime: POW_TIME,
+        powTarget: POW_TARGET
+      }).then(() => {
+        if (!cb) return;
+        cb(null, true);
+      }).catch((e) => {
+        if (!cb) return;
+        cb(e, false);
+      });   
+    } else {
+      this.shh.post({
+        symKeyID: this.channels[destination].channelKey,
+        sig: this.sig,
+        ttl: TTL,
+        topic: this.channels[destination].channelCode,
+        payload: createStatusPayload(JSON.stringify(msg), GROUP_MESSAGE, true),
+        powTime: POW_TIME,
+        powTarget: POW_TARGET
+      }).then(() => {
+        if (!cb) return;
+        cb(null, true);
+      }).catch((e) => {
+        if (!cb) return;
+        cb(e, false);
+      });    
     }
-    this.shh.post({
-      symKeyID: this.channels[channelName].channelKey,
-      sig: this.sig,
-      ttl: TTL,
-      topic: this.channels[channelName].channelCode,
-      payload: createStatusPayload(JSON.stringify(msg), GROUP_MESSAGE, true),
-      powTime: POW_TIME,
-      powTarget: POW_TARGET
-    }).then(() => {
-      if (!cb) return;
-      cb(null, true);
-    }).catch((e) => {
-      if (!cb) return;
-      cb(e, false);
-    });
   }
 
+
+
+
+
+
+
+
+  
   sendMessage(destination, msg, cb){
     if (CONTACT_CODE_REGEXP.test(destination)) {
       this.sendUserMessage(destination, msg, cb);
