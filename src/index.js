@@ -13,9 +13,13 @@ const CONTACT_DISCOVERY_TOPIC = '0xf8946aac';
 
 const CONTACT_CODE_REGEXP = /^(0x)?[0-9a-f]{130}$/i;
 
-function createStatusPayload(content, messageType, isJson) {
+function createStatusPayload(content, messageType, clockValue, isJson) {
+  
   const tag = '~#c4';
-  const clockValue = (new Date().getTime()) * 100;
+  if(!clockValue){
+    clockValue = (new Date().getTime()) * 100;
+  }
+
   const contentType = (isJson ? 'content/json' : 'text/plain');
   const timestamp = new Date().getTime();
   
@@ -59,6 +63,7 @@ class StatusJS {
     this.channels[channelName] = {
       channelName,
       channelKey,
+      lastClockValue: 0,
       channelCode: Web3.utils.sha3(channelName).slice(0, 10)
     }
     if (cb) cb();
@@ -66,7 +71,8 @@ class StatusJS {
 
   async addContact(contactCode, cb) {
     this.contacts[contactCode] = {
-      'username': utils.generateUsernameFromSeed(contactCode)
+      username: utils.generateUsernameFromSeed(contactCode),
+      lastClockValue: 0
     }
     if (cb) cb();
   }
@@ -103,6 +109,13 @@ class StatusJS {
       topics: [this.channels[channelName].channelCode]
     }).on('data', (data) => {
       let username = utils.generateUsernameFromSeed(data.sig);
+
+      const payloadArray = JSON.parse(hexToAscii(data.payload));
+
+      if(this.channels[channelName].lastClockValue < payloadArray[1][3]){
+        this.channels[channelName].lastClockValue = payloadArray[1][3];
+      }
+
       cb(null, {payload: hexToAscii(data.payload), data: data, username: username});
     }).on('error', (err) => {
       cb(err);
@@ -115,22 +128,34 @@ class StatusJS {
       privateKeyID: this.sig,
       topics: [CONTACT_DISCOVERY_TOPIC]
     }).on('data', (data) => {
-      let username = utils.generateUsernameFromSeed(data.sig);
-      if(!this.contacts[data.sig]) this.contacts[data.sig] = {};
-      this.contacts[data.sig].username = username;
-      cb(null, {payload: hexToAscii(data.payload), data: data, username: username});
+      if(!this.contacts[data.sig]){
+        this.addContact(data.sig);
+      } 
+
+      const payloadArray = JSON.parse(hexToAscii(data.payload));
+      if(this.contacts[data.sig].lastClockValue < payloadArray[1][3]){
+        this.contacts[data.sig].lastClockValue = payloadArray[1][3];
+      }
+
+      cb(null, {payload: hexToAscii(data.payload), data: data, username: this.contacts[data.sig].username});
     }).on('error', (err) => {
       cb(err);
     });
   }
 
-  sendUserMessage(contactCode, msg, cb) {    
+  sendUserMessage(contactCode, msg, cb) {   
+    
+    if(!this.contacts[contactCode]){
+      this.addContact(contactCode);
+    }
+    this.contacts[contactCode].lastClockValue++;
+
     this.shh.post({
       pubKey: contactCode,
       sig: this.sig,
       ttl: TTL,
       topic: CONTACT_DISCOVERY_TOPIC,
-      payload: createStatusPayload(msg, USER_MESSAGE),
+      payload: createStatusPayload(msg, USER_MESSAGE, this.contacts[contactCode].lastClockValue),
       powTime: POW_TIME,
       powTarget: POW_TARGET
     }).then(() => {
@@ -148,12 +173,14 @@ class StatusJS {
       return cb("unknown channel: " + channelName);
     }
 
+    this.channels[channelName].lastClockValue++;
+
     this.shh.post({
       symKeyID: this.channels[channelName].channelKey,
       sig: this.sig,
       ttl: TTL,
       topic: this.channels[channelName].channelCode,
-      payload: createStatusPayload(msg, GROUP_MESSAGE),
+      payload: createStatusPayload(msg, GROUP_MESSAGE, this.channels[channelName].lastClockValue ),
       powTime: POW_TIME,
       powTarget: POW_TARGET
     }).then(() => {
@@ -167,12 +194,17 @@ class StatusJS {
 
   sendJsonMessage(destination, msg, cb) {
     if (CONTACT_CODE_REGEXP.test(destination)) {
+      if(!this.contacts[destination]){
+        this.addContact(destination);
+      }
+      this.contacts[destination].lastClockValue++;
+  
       this.shh.post({
         pubKey: destination,
         sig: this.sig,
         ttl: TTL,
         topic: CONTACT_DISCOVERY_TOPIC,
-        payload: createStatusPayload(msg, USER_MESSAGE),
+        payload: createStatusPayload(msg, USER_MESSAGE, this.contacts[destination].lastClockValue, true),
         powTime: POW_TIME,
         powTarget: POW_TARGET
       }).then(() => {
@@ -183,12 +215,14 @@ class StatusJS {
         cb(e, false);
       });   
     } else {
+      this.channels[destination].lastClockValue++;
+
       this.shh.post({
         symKeyID: this.channels[destination].channelKey,
         sig: this.sig,
         ttl: TTL,
         topic: this.channels[destination].channelCode,
-        payload: createStatusPayload(JSON.stringify(msg), GROUP_MESSAGE, true),
+        payload: createStatusPayload(JSON.stringify(msg), GROUP_MESSAGE, this.channels[destination].lastClockValue, true),
         powTime: POW_TIME,
         powTarget: POW_TARGET
       }).then(() => {
