@@ -22,7 +22,7 @@ function createStatusPayload(content, messageType, isJson) {
   return asciiToHex(
     JSON.stringify([
       tag,
-      [content, contentType, messageType, clockValue, timestamp],
+      [content, contentType, messageType, clockValue, timestamp, ["^ ","~:text", content]],
     ]),
   );
 }
@@ -48,8 +48,9 @@ class StatusJS {
     return pubKey;
   }
 
-  async getUserName(){
-    const pubKey = await this.getPublicKey();
+  async getUserName(pubKey){
+    if(!pubKey)
+      pubKey = await this.getPublicKey();
     return utils.generateUsernameFromSeed(pubKey);
   }
 
@@ -164,11 +165,6 @@ class StatusJS {
     });
   }
 
-
-
-
-
-
   sendJsonMessage(destination, msg, cb) {
     if (CONTACT_CODE_REGEXP.test(destination)) {
       this.shh.post({
@@ -204,14 +200,6 @@ class StatusJS {
       });    
     }
   }
-
-
-
-
-
-
-
-
   
   sendMessage(destination, msg, cb){
     if (CONTACT_CODE_REGEXP.test(destination)) {
