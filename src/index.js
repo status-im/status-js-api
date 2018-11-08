@@ -14,10 +14,10 @@ const CONTACT_DISCOVERY_TOPIC = '0xf8946aac';
 const CONTACT_CODE_REGEXP = /^(0x)?[0-9a-f]{130}$/i;
 
 function createStatusPayload(content, messageType, clockValue, isJson) {
-  
   const tag = '~#c4';
-  if(!clockValue){
-    clockValue = (new Date().getTime()) * 100;
+  const oneMonthInMs = 60 * 60 * 24 * 31 * 1000;
+  if(clockValue < (new Date().getTime())){
+    clockValue = (new Date().getTime() + oneMonthInMs) * 100;
   }
 
   const contentType = (isJson ? 'content/json' : 'text/plain');
