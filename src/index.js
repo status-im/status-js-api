@@ -1,5 +1,7 @@
 const Web3 = require('web3');
 const utils = require('./utils.js');
+const mailservers = require('./mailservers.js');
+
 const { utils: { asciiToHex, hexToAscii, sha3  }  } = Web3;
 
 const POW_TIME = 1;
@@ -37,12 +39,16 @@ class StatusJS {
     this.channels = {};
     this.contacts = {};
     this.userMessagesSubscription = null;
+    this.mailservers = null;
   }
 
   async connect(url) {
     let web3 = new Web3();
     web3.setProvider(new Web3.providers.WebsocketProvider(url, {headers: {Origin: "statusjs"}}));
+
     this.shh = web3.shh;
+    this.mailservers = new mailservers(web3);
+    
     await web3.shh.setMinPoW(POW_TARGET);
     this.sig = await web3.shh.newKeyPair();
   }
