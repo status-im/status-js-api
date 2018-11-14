@@ -30,51 +30,49 @@ class MailServers {
 
             const peerId = mailserverList[mailserver].substr(8, 128);
             
-                this.web3.shh.markTrustedPeer(peerId)
-                .then(() => {
-                    this.mailserver = mailserver;
-    console.log("A");
-                    if (!cb) return;
-                    cb(null, true);
-                }).catch((e) => {
-                    if (!cb) return;
-                    cb(e, false);
-                });
-
+            this.web3.shh.markTrustedPeer(peerId)
+            .then(() => {
+                this.mailserver = peerId;
+                if (!cb) return;
+                cb(null, true);
+            }).catch((e) => {
+                if (!cb) return;
+                cb(e, false);
+            });
           }
         );
-
-
-        
     }
 
-    requestMessages(cb){
+    async requestMessages(cb){
         if(!this.mailserver){
             if(!cb) return;
             return cb("Mailserver is not set");
         }
 
-        /*
-        :topics         topics
-        :mailServerPeer address
-        :symKeyID       sym-key-id
-        :timeout        request-timeout
-        :from           from
-        :to             to})
-        */
+        const symKeyID = await this.web3.shh.generateSymKeyFromPassword("status-offline-inbox");
 
+        // TODO: extract this as parameters
+        const topic =  await this.web3.shh.generateSymKeyFromPassword("mytest");
+        const from = (new Date("2018-11-13 00:00:00")).getTime();
+        const to = (new Date("2018-11-14 20:00:00")).getTime();
 
-        /*
-       symKeyID - String (optional): ID of symmetric key for message encryption (Either symKeyID or pubKey must be present. Can not be both.).
-       pubKey - String (optional): The public key for message encryption (Either symKeyID or pubKey must be present. Can not be both.).
-       sig - String (optional): The ID of the signing key.
-       ttl - Number: Time-to-live in seconds.
-       topic - String: 4 Bytes (mandatory when key is symmetric): Message topic.
-       payload - String: The payload of the message to be encrypted.
-       padding - Number (optional): Padding (byte array of arbitrary length).
-       powTime - Number (optional)?: Maximal time in seconds to be spent on proof of work.
-       powTarget - Number (optional)?: Minimal PoW target required for this message.
-       targetPeer - Number (optional): Peer ID (for peer-to-peer message only).  */
+        this.web3.currentProvider.send({
+            method: "shh_requestMessages",
+            params: [mailserverList[this.mailserver], topic, symKeyID, from, to ],
+            jsonrpc: "2.0",
+            id: new Date().getTime()
+          }, (err, res) => {
+
+            // TODO: implement result handling
+
+            if(err){
+                console.log(err);
+            }
+
+            console.log(res);
+        });
+
+       
 
     }
 
