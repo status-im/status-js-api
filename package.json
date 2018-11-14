@@ -19,5 +19,8 @@
   "dependencies": {
     "chance": "^1.0.16",
     "web3": "^1.0.0-beta.36"
+  },
+  "devDependencies": {
+    "tape-async": "^2.3.0"
   }
 }
