@@ -123,7 +123,6 @@ class StatusJS {
     }
 
     this.channels[channelName].subscription = this.shh.subscribe("messages", {
-      minPow: POW_TARGET,
       symKeyID: this.channels[channelName].channelKey,
       topics: [this.channels[channelName].channelCode],
       allowP2P: true

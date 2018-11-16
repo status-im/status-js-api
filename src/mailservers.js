@@ -15,7 +15,7 @@ class MailServers {
         }
 
         this.symKeyID = await this.web3.shh.generateSymKeyFromPassword("status-offline-inbox");
-
+        
         this.web3.currentProvider.send({
             method: "admin_addPeer",
             params: [enode],
@@ -33,13 +33,12 @@ class MailServers {
             }
 
             setTimeout(() => {
-            this.web3.shh.markTrustedPeer(enode)
+                this.web3.shh.markTrustedPeer(enode)
                 .then(res => {
                     this.mailserver = enode;
                     if (!cb) return true;
                     cb(null, true);
                 }).catch((e) => {
-                    console.log(e);
                     if (!cb) return;
                     cb(e, false);
                 });
@@ -55,6 +54,7 @@ class MailServers {
 
         const topics =   [this.web3.utils.sha3(topic).slice(0, 10)];
         const mailserverPeer = this.mailserver;
+
         const timeout = options.timeout || 30; // seconds
         const symKeyID = this.symKeyID;
         const from = options.from || 0; // unix timestamp

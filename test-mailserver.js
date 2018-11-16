@@ -9,11 +9,13 @@ var status = new StatusJS();
   await status.joinChat(channel);
 
   status.onMessage(channel, (err, data) => {
-    console.dir(data.payload);
+    console.log(data.payload);
   });
 
   status.mailservers.useMailserver("mail-02.gc-us-central1-a.eth.beta", (err, res) => {
-    status.mailservers.requestMessages(channel, {}, (err, res) => { if(err) console.log(err); });
+    status.mailservers.requestMessages(channel, {}, (err, res) => { 
+      if(err) console.log(err); 
+    });
   });
 
   setInterval(() => { }, 3000);
