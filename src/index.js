@@ -1,5 +1,7 @@
 const Web3 = require('web3');
 const utils = require('./utils.js');
+const mailservers = require('./mailservers.js');
+
 const { utils: { asciiToHex, hexToAscii, sha3  }  } = Web3;
 
 const POW_TIME = 1;
@@ -38,12 +40,21 @@ class StatusJS {
     this.channels = {};
     this.contacts = {};
     this.userMessagesSubscription = null;
+    this.mailservers = null;
   }
 
   async connect(url, privateKey) {
     let web3 = new Web3();
-    web3.setProvider(new Web3.providers.WebsocketProvider(url, {headers: {Origin: "statusjs"}}));
+    if(url.startsWith("ws://")){
+      web3.setProvider(new Web3.providers.WebsocketProvider(url, {headers: {Origin: "statusjs"}}));
+    } else {
+      const net = require('net');
+      web3.setProvider(new Web3.providers.IpcProvider(url, net));
+    }
+    
     this.shh = web3.shh;
+    this.mailservers = new mailservers(web3);
+    
     await web3.shh.setMinPoW(POW_TARGET);
     _sig.set(
       this,
@@ -116,9 +127,9 @@ class StatusJS {
     }
 
     this.channels[channelName].subscription = this.shh.subscribe("messages", {
-      minPow: POW_TARGET,
       symKeyID: this.channels[channelName].channelKey,
-      topics: [this.channels[channelName].channelCode]
+      topics: [this.channels[channelName].channelCode],
+      allowP2P: true
     }).on('data', (data) => {
       let username = utils.generateUsernameFromSeed(data.sig);
 
@@ -138,7 +149,8 @@ class StatusJS {
     this.userMessagesSubscription = this.shh.subscribe("messages", {
       minPow: POW_TARGET,
       privateKeyID: _sig.get(this),
-      topics: [CONTACT_DISCOVERY_TOPIC]
+      topics: [CONTACT_DISCOVERY_TOPIC],
+      allowP2P: true
     }).on('data', (data) => {
       if(!this.contacts[data.sig]){
         this.addContact(data.sig);
