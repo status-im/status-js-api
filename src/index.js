@@ -51,6 +51,10 @@ class StatusJS {
     );
   }
 
+  isConnected() {
+    return this.shh.isListening();
+  }
+
   async generateWhisperKeyFromWallet(key){
     return await this.shh.addPrivateKey(key);
   }
