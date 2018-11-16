@@ -32,6 +32,7 @@ class MailServers {
                 return;
             }
 
+            setTimeout(() => {
             this.web3.shh.markTrustedPeer(enode)
                 .then(res => {
                     this.mailserver = enode;
@@ -42,6 +43,7 @@ class MailServers {
                     if (!cb) return;
                     cb(e, false);
                 });
+            }, 1000);
         });
     }
 
