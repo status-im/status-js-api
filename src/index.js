@@ -24,7 +24,7 @@ function createStatusPayload(content, messageType, clockValue, isJson) {
 
   const contentType = (isJson ? 'content/json' : 'text/plain');
   const timestamp = new Date().getTime();
-  
+
   return asciiToHex(
     JSON.stringify([
       tag,
@@ -33,6 +33,7 @@ function createStatusPayload(content, messageType, clockValue, isJson) {
   );
 }
 
+const _sig = new WeakMap();
 class StatusJS {
 
   constructor() {
@@ -42,7 +43,7 @@ class StatusJS {
     this.mailservers = null;
   }
 
-  async connect(url) {
+  async connect(url, privateKey) {
     let web3 = new Web3();
     if(url.startsWith("ws://")){
       web3.setProvider(new Web3.providers.WebsocketProvider(url, {headers: {Origin: "statusjs"}}));
@@ -55,11 +56,18 @@ class StatusJS {
     this.mailservers = new mailservers(web3);
     
     await web3.shh.setMinPoW(POW_TARGET);
-    this.sig = await web3.shh.newKeyPair();
+    _sig.set(
+      this,
+      privateKey ? await this.generateWhisperKeyFromWallet(privateKey) : await web3.shh.newKeyPair()
+    );
+  }
+
+  async generateWhisperKeyFromWallet(key){
+    return await this.shh.addPrivateKey(key);
   }
 
   async getPublicKey(){
-    const pubKey = await this.shh.getPublicKey(this.sig);
+    const pubKey = await this.shh.getPublicKey(_sig.get(this));
     return pubKey;
   }
 
@@ -137,13 +145,13 @@ class StatusJS {
   onUserMessage(cb) {
     this.userMessagesSubscription = this.shh.subscribe("messages", {
       minPow: POW_TARGET,
-      privateKeyID: this.sig,
+      privateKeyID: _sig.get(this),
       topics: [CONTACT_DISCOVERY_TOPIC],
       allowP2P: true
     }).on('data', (data) => {
       if(!this.contacts[data.sig]){
         this.addContact(data.sig);
-      } 
+      }
 
       const payloadArray = JSON.parse(hexToAscii(data.payload));
       if(this.contacts[data.sig].lastClockValue < payloadArray[1][3]){
@@ -156,8 +164,8 @@ class StatusJS {
     });
   }
 
-  sendUserMessage(contactCode, msg, cb) {   
-    
+  sendUserMessage(contactCode, msg, cb) {
+
     if(!this.contacts[contactCode]){
       this.addContact(contactCode);
     }
@@ -165,7 +173,7 @@ class StatusJS {
 
     this.shh.post({
       pubKey: contactCode,
-      sig: this.sig,
+      sig: _sig.get(this),
       ttl: TTL,
       topic: CONTACT_DISCOVERY_TOPIC,
       payload: createStatusPayload(msg, USER_MESSAGE, this.contacts[contactCode].lastClockValue),
@@ -190,7 +198,7 @@ class StatusJS {
 
     this.shh.post({
       symKeyID: this.channels[channelName].channelKey,
-      sig: this.sig,
+      sig: _sig.get(this),
       ttl: TTL,
       topic: this.channels[channelName].channelCode,
       payload: createStatusPayload(msg, GROUP_MESSAGE, this.channels[channelName].lastClockValue ),
@@ -211,10 +219,10 @@ class StatusJS {
         this.addContact(destination);
       }
       this.contacts[destination].lastClockValue++;
-  
+
       this.shh.post({
         pubKey: destination,
-        sig: this.sig,
+        sig: _sig.get(this),
         ttl: TTL,
         topic: CONTACT_DISCOVERY_TOPIC,
         payload: createStatusPayload(msg, USER_MESSAGE, this.contacts[destination].lastClockValue, true),
@@ -226,13 +234,13 @@ class StatusJS {
       }).catch((e) => {
         if (!cb) return;
         cb(e, false);
-      });   
+      });
     } else {
       this.channels[destination].lastClockValue++;
 
       this.shh.post({
         symKeyID: this.channels[destination].channelKey,
-        sig: this.sig,
+        sig: _sig.get(this),
         ttl: TTL,
         topic: this.channels[destination].channelCode,
         payload: createStatusPayload(JSON.stringify(msg), GROUP_MESSAGE, this.channels[destination].lastClockValue, true),
@@ -244,10 +252,10 @@ class StatusJS {
       }).catch((e) => {
         if (!cb) return;
         cb(e, false);
-      });    
+      });
     }
   }
-  
+
   sendMessage(destination, msg, cb){
     if (CONTACT_CODE_REGEXP.test(destination)) {
       this.sendUserMessage(destination, msg, cb);
@@ -259,5 +267,3 @@ class StatusJS {
 }
 
 module.exports = StatusJS;
-
-
