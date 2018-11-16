@@ -6,77 +6,82 @@ class MailServers {
         this.mailserver = null;
     }
 
-    useMailserver(mailserver, cb){
-        if(!mailserverList[mailserver]){
+    async useMailserver(mailserver, cb){
+        var enode = mailserverList[mailserver];
+
+        if(!enode){
             if(!cb) return;
             cb("unknown mailserver: " + mailserver);
         }
 
+        this.symKeyID = await this.web3.shh.generateSymKeyFromPassword("status-offline-inbox");
+
         this.web3.currentProvider.send({
             method: "admin_addPeer",
-            params: [mailserverList[mailserver]],
+            params: [enode],
             jsonrpc: "2.0",
             id: new Date().getTime()
-          }, (err, res) => {
+        }, (err, res) => {
             if(err){
-                if(cb) return cb(err);
+                if(cb) return cb(err, false);
                 return;
             }
 
             if(!res.result){
-                if(cb) return cb(err);
+                if(cb) return cb(err, false);
                 return;
             }
 
-            const peerId = mailserverList[mailserver].substr(8, 128);
-            
-            this.web3.shh.markTrustedPeer(peerId)
-            .then(() => {
-                this.mailserver = peerId;
-                if (!cb) return;
-                cb(null, true);
-            }).catch((e) => {
-                if (!cb) return;
-                cb(e, false);
-            });
-          }
-        );
+            this.web3.shh.markTrustedPeer(enode)
+                .then(res => {
+                    this.mailserver = enode;
+                    if (!cb) return true;
+                    cb(null, true);
+                }).catch((e) => {
+                    console.log(e);
+                    if (!cb) return;
+                    cb(e, false);
+                });
+        });
     }
 
-    async requestMessages(cb){
+    async requestMessages(topic, options, cb){
         if(!this.mailserver){
             if(!cb) return;
-            return cb("Mailserver is not set");
+            return cb("Mailserver is not set", false);
         }
 
-        const symKeyID = await this.web3.shh.generateSymKeyFromPassword("status-offline-inbox");
-
-        // TODO: extract this as parameters
-        const topic =  await this.web3.shh.generateSymKeyFromPassword("mytest");
-        const from = (new Date("2018-11-13 00:00:00")).getTime();
-        const to = (new Date("2018-11-14 20:00:00")).getTime();
+        const topics =   [this.web3.utils.sha3(topic).slice(0, 10)];
+        const mailserverPeer = this.mailserver;
+        const timeout = options.timeout || 30; // seconds
+        const symKeyID = this.symKeyID;
+        const from = options.from || 0; // unix timestamp
+        const to = options.to || 0;
+        const limit = options.limit || 0;
 
         this.web3.currentProvider.send({
-            method: "shh_requestMessages",
-            params: [mailserverList[this.mailserver], topic, symKeyID, from, to ],
+            method: "shhext_requestMessages",
+            params: [{
+                mailserverPeer, 
+                symKeyID,
+                timeout,
+                topics,
+                from,
+                to,
+                limit
+            }],
             jsonrpc: "2.0",
             id: new Date().getTime()
-          }, (err, res) => {
-
-            // TODO: implement result handling
-
+        }, (err, res) => {
             if(err){
-                console.log(err);
+                if(cb) return cb(err);
+                return false;
             }
 
-            console.log(res);
+            if(cb) return cb(null, true);
+            return true;
         });
-
-       
-
     }
-
-
 }
 
 module.exports = MailServers;
