@@ -51,10 +51,24 @@ class StatusJS {
       const net = require('net');
       web3.setProvider(new Web3.providers.IpcProvider(url, net));
     }
-    
+
     this.shh = web3.shh;
     this.mailservers = new mailservers(web3);
-    
+
+    await web3.shh.setMinPoW(POW_TARGET);
+    _sig.set(
+      this,
+      privateKey ? await this.generateWhisperKeyFromWallet(privateKey) : await web3.shh.newKeyPair()
+    );
+  }
+
+  async connectToProvider(provider, privateKey) {
+    let web3 = new Web3();
+    web3.setProvider(provider);
+
+    this.shh = web3.shh;
+    this.mailservers = new mailservers(web3);
+
     await web3.shh.setMinPoW(POW_TARGET);
     _sig.set(
       this,
