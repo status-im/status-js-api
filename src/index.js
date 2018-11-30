@@ -1,22 +1,13 @@
 const Web3 = require('web3');
 const utils = require('./utils.js');
 const mailservers = require('./mailservers.js');
+const constants = require('./constants');
 
 const { utils: { asciiToHex, hexToAscii, sha3  }  } = Web3;
 
-const POW_TIME = 1;
-const TTL = 10;
-const POW_TARGET = 0.002;
-
-const GROUP_MESSAGE = "~:public-group-user-message";
-const USER_MESSAGE =  "~:user-message";
-
-const CONTACT_DISCOVERY_TOPIC = '0xf8946aac';
-
-const CONTACT_CODE_REGEXP = /^(0x)?[0-9a-f]{130}$/i;
 
 function createStatusPayload(content, messageType, clockValue, isJson) {
-  const tag = '~#c4';
+  const tag = constants.messageTags.message;
   const oneMonthInMs = 60 * 60 * 24 * 31 * 1000;
   if(clockValue < (new Date().getTime())){
     clockValue = (new Date().getTime() + oneMonthInMs) * 100;
@@ -60,7 +51,7 @@ class StatusJS {
     this.shh = web3.shh;
     this.mailservers = new mailservers(web3);
     
-    await web3.shh.setMinPoW(POW_TARGET);
+    await web3.shh.setMinPoW(constants.post.POW_TARGET);
     _sig.set(
       this,
       privateKey ? await this.generateWhisperKeyFromWallet(privateKey) : await web3.shh.newKeyPair()
@@ -133,6 +124,10 @@ class StatusJS {
     }
   }
 
+  onChatRequest(cb){
+    this.chatRequestCb = cb;
+  }
+
   onChannelMessage(channelName, cb) {
     if (!this.channels[channelName]) {
       return cb("unknown channel: " + channelName);
@@ -177,13 +172,14 @@ class StatusJS {
   onUserMessage(cb) {
 
     const filters = {
-      minPow: POW_TARGET,
+      minPow: constants.post.POW_TARGET,
       privateKeyID: _sig.get(this),
-      topics: [CONTACT_DISCOVERY_TOPIC],
+      topics: [constants.topics.CONTACT_DISCOVERY_TOPIC],
       allowP2P: true
     };
 
     const messageHandler = (data) => {
+      console.log(data);
       if(!this.contacts[data.sig]){
         this.addContact(data.sig);
       }
@@ -193,7 +189,20 @@ class StatusJS {
         this.contacts[data.sig].lastClockValue = payloadArray[1][3];
       }
 
-      cb(null, {payload: hexToAscii(data.payload), data: data, username: this.contacts[data.sig].username});
+      if(payloadArray[0] == constants.messageTags.message){
+        cb(null, {payload: hexToAscii(data.payload), data: data, username: this.contacts[data.sig].username});
+      } else if(payloadArray[0] == constants.messageTags.chatRequest) {
+        this.contacts[data.sig].displayName = payloadArray[1][0];
+        this.contacts[data.sig].profilePic = payloadArray[1][1];
+
+        if(this.chatRequestCb){
+          this.chatRequestCb(null, {
+            'username': this.contacts[data.sig].username,
+            'displayName': this.contacts[data.sig].displayName,
+            'profilePic': this.contacts[data.sig].profilePic,
+          });
+        }
+      }
     };
     
 
@@ -228,11 +237,11 @@ class StatusJS {
     this.shh.post({
       pubKey: contactCode,
       sig: _sig.get(this),
-      ttl: TTL,
-      topic: CONTACT_DISCOVERY_TOPIC,
-      payload: createStatusPayload(msg, USER_MESSAGE, this.contacts[contactCode].lastClockValue),
-      powTime: POW_TIME,
-      powTarget: POW_TARGET
+      ttl: constants.post.TTL,
+      topic: constants.topics.CONTACT_DISCOVERY_TOPIC,
+      payload: createStatusPayload(msg, constants.messageTypes.USER_MESSAGE, this.contacts[contactCode].lastClockValue),
+      powTime: constants.post.POW_TIME,
+      powTarget: constants.post.POW_TARGET
     }).then(() => {
       if (!cb) return;
       cb(null, true);
@@ -253,11 +262,11 @@ class StatusJS {
     this.shh.post({
       symKeyID: this.channels[channelName].channelKey,
       sig: _sig.get(this),
-      ttl: TTL,
+      ttl: constants.post.TTL,
       topic: this.channels[channelName].channelCode,
-      payload: createStatusPayload(msg, GROUP_MESSAGE, this.channels[channelName].lastClockValue ),
-      powTime: POW_TIME,
-      powTarget: POW_TARGET
+      payload: createStatusPayload(msg, constants.messageTypes.GROUP_MESSAGE, this.channels[channelName].lastClockValue ),
+      powTime: constants.post.POW_TIME,
+      powTarget: constants.post.POW_TARGET
     }).then(() => {
       if (!cb) return;
       cb(null, true);
@@ -268,7 +277,7 @@ class StatusJS {
   }
 
   sendJsonMessage(destination, msg, cb) {
-    if (CONTACT_CODE_REGEXP.test(destination)) {
+    if (constants.regExp.CONTACT_CODE_REGEXP.test(destination)) {
       if(!this.contacts[destination]){
         this.addContact(destination);
       }
@@ -277,11 +286,11 @@ class StatusJS {
       this.shh.post({
         pubKey: destination,
         sig: _sig.get(this),
-        ttl: TTL,
-        topic: CONTACT_DISCOVERY_TOPIC,
-        payload: createStatusPayload(msg, USER_MESSAGE, this.contacts[destination].lastClockValue, true),
-        powTime: POW_TIME,
-        powTarget: POW_TARGET
+        ttl: constants.post.TTL,
+        topic: constants.topics.CONTACT_DISCOVERY_TOPIC,
+        payload: createStatusPayload(msg, constants.messageTypes.USER_MESSAGE, this.contacts[destination].lastClockValue, true),
+        powTime: constants.post.POW_TIME,
+        powTarget: constants.post.POW_TARGET
       }).then(() => {
         if (!cb) return;
         cb(null, true);
@@ -295,11 +304,11 @@ class StatusJS {
       this.shh.post({
         symKeyID: this.channels[destination].channelKey,
         sig: _sig.get(this),
-        ttl: TTL,
+        ttl: constants.post.TTL,
         topic: this.channels[destination].channelCode,
-        payload: createStatusPayload(JSON.stringify(msg), GROUP_MESSAGE, this.channels[destination].lastClockValue, true),
-        powTime: POW_TIME,
-        powTarget: POW_TARGET
+        payload: createStatusPayload(JSON.stringify(msg), constants.messageTypes.GROUP_MESSAGE, this.channels[destination].lastClockValue, true),
+        powTime: constants.post.POW_TIME,
+        powTarget: constants.post.POW_TARGET
       }).then(() => {
         if (!cb) return;
         cb(null, true);
@@ -311,7 +320,7 @@ class StatusJS {
   }
 
   sendMessage(destination, msg, cb){
-    if (CONTACT_CODE_REGEXP.test(destination)) {
+    if (constants.regExp.CONTACT_CODE_REGEXP.test(destination)) {
       this.sendUserMessage(destination, msg, cb);
     } else {
       this.sendGroupMessage(destination, msg, cb);
