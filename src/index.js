@@ -121,6 +121,10 @@ class StatusJS {
     }
   }
 
+  onChatRequest(cb){
+    this.chatRequestCb = cb;
+  }
+
   onChannelMessage(channelName, cb) {
     if (!this.channels[channelName]) {
       return cb("unknown channel: " + channelName);
@@ -161,7 +165,20 @@ class StatusJS {
         this.contacts[data.sig].lastClockValue = payloadArray[1][3];
       }
 
-      cb(null, {payload: hexToAscii(data.payload), data: data, username: this.contacts[data.sig].username});
+      if(payloadArray[0] == '~#c4'){
+        cb(null, {payload: hexToAscii(data.payload), data: data, username: this.contacts[data.sig].username});
+      } else if(payloadArray[0] == '~#c2') {
+        this.contacts[data.sig].displayName = payloadArray[1][0];
+        this.contacts[data.sig].profilePic = payloadArray[1][1];
+
+        if(this.chatRequestCb){
+          this.chatRequestCb(null, {
+            'username': this.contacts[data.sig].username,
+            'displayName': this.contacts[data.sig].displayName,
+            'profilePic': this.contacts[data.sig].profilePic,
+          });
+        }
+      }
     }).on('error', (err) => {
       cb(err);
     });
