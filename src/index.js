@@ -179,7 +179,6 @@ class StatusJS {
     };
 
     const messageHandler = (data) => {
-      console.log(data);
       if(!this.contacts[data.sig]){
         this.addContact(data.sig);
       }
@@ -223,7 +222,7 @@ class StatusJS {
       });
     } else {
       this.userMessagesSubscription = this.shh.subscribe("messages", filters)
-                                                     .on('data', (data) => messageHandler)
+                                                     .on('data', (data) => { messageHandler(data); })
                                                      .on('error', (err) => { cb(err); });
     }
   }
