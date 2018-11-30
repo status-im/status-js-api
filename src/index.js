@@ -41,12 +41,17 @@ class StatusJS {
     this.contacts = {};
     this.userMessagesSubscription = null;
     this.mailservers = null;
+    this.isHttpProvider = false;
   }
 
   async connect(url, privateKey) {
     let web3 = new Web3();
     if(url.startsWith("ws://")){
       web3.setProvider(new Web3.providers.WebsocketProvider(url, {headers: {Origin: "statusjs"}}));
+    } else if(url.startsWith("http://") || url.startsWith("https://")) {
+      // Deprecated but required for statusd
+      web3.setProvider(new Web3.providers.HttpProvider(url));
+      this.isHttpProvider = true;
     } else {
       const net = require('net');
       web3.setProvider(new Web3.providers.IpcProvider(url, net));
@@ -101,7 +106,14 @@ class StatusJS {
   }
 
   leaveChat(channelName) {
-    this.channels[channelName].subscription.unsubscribe();
+    if(!this.isHttpProvider)
+      this.channels[channelName].subscription.unsubscribe();
+    else {
+      web3.shh.deleteMessageFilter(this.channels[channelName].filterId)
+        .then(result => {
+          clearInterval(this.channels[channelName].interval);
+        });
+    }
     delete this.channels[channelName];
   }
 
@@ -126,32 +138,52 @@ class StatusJS {
       return cb("unknown channel: " + channelName);
     }
 
-    this.channels[channelName].subscription = this.shh.subscribe("messages", {
+    const filters = {
       symKeyID: this.channels[channelName].channelKey,
       topics: [this.channels[channelName].channelCode],
       allowP2P: true
-    }).on('data', (data) => {
+    };
+
+    const messageHandler = (data) => {
       let username = utils.generateUsernameFromSeed(data.sig);
-
       const payloadArray = JSON.parse(hexToAscii(data.payload));
-
       if(this.channels[channelName].lastClockValue < payloadArray[1][3]){
         this.channels[channelName].lastClockValue = payloadArray[1][3];
       }
-
       cb(null, {payload: hexToAscii(data.payload), data: data, username: username});
-    }).on('error', (err) => {
-      cb(err);
-    });
+    };
+
+    if(this.isHttpProvider){
+      this.shh.newMessageFilter(filters)
+      .then(filterId => {
+        this.channels[channelName].filterId = filterId;
+        this.channels[channelName].interval = setInterval(() => {
+          this.shh.getFilterMessages(filterId)
+          .then(data => {
+            data.map(d => {
+              messageHandler(d);
+            });
+          })
+          .catch((err) => { cb(err); });
+        }, 250);
+      });
+    } else {
+      this.channels[channelName].subscription = this.shh.subscribe("messages", filters)
+                                                              .on('data', messageHandler)
+                                                              .on('error', (err) => { cb(err); });
+    }
   }
 
   onUserMessage(cb) {
-    this.userMessagesSubscription = this.shh.subscribe("messages", {
+
+    const filters = {
       minPow: POW_TARGET,
       privateKeyID: _sig.get(this),
       topics: [CONTACT_DISCOVERY_TOPIC],
       allowP2P: true
-    }).on('data', (data) => {
+    };
+
+    const messageHandler = (data) => {
       if(!this.contacts[data.sig]){
         this.addContact(data.sig);
       }
@@ -162,13 +194,32 @@ class StatusJS {
       }
 
       cb(null, {payload: hexToAscii(data.payload), data: data, username: this.contacts[data.sig].username});
-    }).on('error', (err) => {
-      cb(err);
-    });
+    };
+    
+
+    if(this.isHttpProvider){
+      this.shh.newMessageFilter(filters)
+      .then(filterId => {
+        this.userMessagesSubscription = {};
+        this.userMessagesSubscription.filterId = filterId;
+        this.userMessagesSubscription.interval = setInterval(() => {
+          this.shh.getFilterMessages(filterId)
+          .then(data => {
+            data.map(d => {
+              messageHandler(d);
+            });
+          })
+          .catch((err) => { cb(err); });
+        }, 250);
+      });
+    } else {
+      this.userMessagesSubscription = this.shh.subscribe("messages", filters)
+                                                     .on('data', (data) => messageHandler)
+                                                     .on('error', (err) => { cb(err); });
+    }
   }
 
   sendUserMessage(contactCode, msg, cb) {
-
     if(!this.contacts[contactCode]){
       this.addContact(contactCode);
     }
