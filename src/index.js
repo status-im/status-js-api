@@ -1,10 +1,9 @@
 const Web3 = require('web3');
 import utils from './utils.js';
-const mailservers = require('./mailservers.js');
+import mailservers from './mailservers.js';
 const constants = require('./constants');
 
 const { utils: { asciiToHex, hexToAscii  }  } = Web3;
-
 
 function createStatusPayload(content, messageType, clockValue, isJson) {
   const tag = constants.messageTags.message;
