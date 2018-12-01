@@ -9,7 +9,7 @@ class MailServers {
     this.web3 = web3;
   }
 
-  public async useMailserver(mailserver: string, cb?: Function) {
+  public async useMailserver(mailserver: string, cb?: any) {
     const enode: string = mailserverList[mailserver];
 
     if (!enode) {
