@@ -1,5 +1,5 @@
 const Web3 = require('web3');
-const utils = require('./utils.js');
+import utils from './utils.js';
 const mailservers = require('./mailservers.js');
 const constants = require('./constants');
 
