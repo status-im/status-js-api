@@ -14,11 +14,17 @@ clone the repo via git:
 ```
 $ git clone https://github.com/status-im/status-js.git
 ```
-And then install the dependencies with `npm`.
+And then install the dependencies with `yarn`.
 ```
 $ cd status-js
-$ npm install
+$ yarn
 ```
+
+To develop:
+```
+$ yarn run start
+$ yarn run lint
+````
 
 `status-js` requires `geth` or `murmur` to be able to connect to Whisper. If using `geth`, you may start it with the following flags.
 

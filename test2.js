@@ -1,4 +1,4 @@
-const StatusJS = require('./src/index.js');
+const StatusJS = require('./dist/index.js');
 const Web3 = require('web3');
 const { utils: { asciiToHex, hexToAscii  }  } = Web3;
 
@@ -8,7 +8,7 @@ const { utils: { asciiToHex, hexToAscii  }  } = Web3;
 
   let status2 = new StatusJS();
   await status2.connect("ws://localhost:8546");
-  
+
 
   const user1pubKey = await status1.getPublicKey();
   const user2pubKey = await status2.getPublicKey();
@@ -24,7 +24,7 @@ const { utils: { asciiToHex, hexToAscii  }  } = Web3;
     console.log(data.payload)
   };
 
-  
+
   status1.onMessage(receivedMessageCb('user1'));
   status2.onMessage(receivedMessageCb('user2'));
 
@@ -33,7 +33,7 @@ const { utils: { asciiToHex, hexToAscii  }  } = Web3;
 
   status2.sendMessage(user1pubKey, "hello user1!");
 
-  
+
   // Text someone at status
   //status1.sendMessage("0xcontact_code_here", "hello!");
 
