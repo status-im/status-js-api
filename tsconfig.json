@@ -8,6 +8,7 @@
     "strict": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
+    "suppressImplicitAnyIndexErrors": true,
     "esModuleInterop": true,
     "typeRoots": ["node_modules/@types"],
     "rootDir": ".",
