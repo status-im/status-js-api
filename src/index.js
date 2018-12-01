@@ -3,7 +3,7 @@ const utils = require('./utils.js');
 const mailservers = require('./mailservers.js');
 const constants = require('./constants');
 
-const { utils: { asciiToHex, hexToAscii, sha3  }  } = Web3;
+const { utils: { asciiToHex, hexToAscii  }  } = Web3;
 
 
 function createStatusPayload(content, messageType, clockValue, isJson) {
@@ -47,10 +47,10 @@ class StatusJS {
       const net = require('net');
       web3.setProvider(new Web3.providers.IpcProvider(url, net));
     }
-    
+
     this.shh = web3.shh;
     this.mailservers = new mailservers(web3);
-    
+
     await web3.shh.setMinPoW(constants.post.POW_TARGET);
     _sig.set(
       this,
@@ -63,7 +63,8 @@ class StatusJS {
   }
 
   async generateWhisperKeyFromWallet(key){
-    return await this.shh.addPrivateKey(key);
+    await this.shh.addPrivateKey(key);
+    return;
   }
 
   async getPublicKey(){
@@ -72,8 +73,10 @@ class StatusJS {
   }
 
   async getUserName(pubKey){
-    if(!pubKey)
+    if(!pubKey) {
       pubKey = await this.getPublicKey();
+    }
+
     return utils.generateUsernameFromSeed(pubKey);
   }
 
@@ -84,7 +87,7 @@ class StatusJS {
       channelKey,
       lastClockValue: 0,
       channelCode: Web3.utils.sha3(channelName).slice(0, 10)
-    }
+    };
     if (cb) cb();
   }
 
@@ -92,23 +95,24 @@ class StatusJS {
     this.contacts[contactCode] = {
       username: utils.generateUsernameFromSeed(contactCode),
       lastClockValue: 0
-    }
+    };
     if (cb) cb();
   }
 
   leaveChat(channelName) {
-    if(!this.isHttpProvider)
+    if(!this.isHttpProvider) {
       this.channels[channelName].subscription.unsubscribe();
-    else {
-      web3.shh.deleteMessageFilter(this.channels[channelName].filterId)
-        .then(result => {
-          clearInterval(this.channels[channelName].interval);
-        });
+    } else {
+      // TODO: fix me
+      //web3.shh.deleteMessageFilter(this.channels[channelName].filterId)
+      //  .then(result => {
+      //    clearInterval(this.channels[channelName].interval);
+      //  });
     }
     delete this.channels[channelName];
   }
 
-  async removeContact(contactCode, cb) {
+  async removeContact(contactCode, _cb) {
     delete this.contacts[contactCode];
   }
 
@@ -188,9 +192,9 @@ class StatusJS {
         this.contacts[data.sig].lastClockValue = payloadArray[1][3];
       }
 
-      if(payloadArray[0] == constants.messageTags.message){
+      if(payloadArray[0] === constants.messageTags.message){
         cb(null, {payload: hexToAscii(data.payload), data: data, username: this.contacts[data.sig].username});
-      } else if(payloadArray[0] == constants.messageTags.chatRequest) {
+      } else if(payloadArray[0] === constants.messageTags.chatRequest) {
         this.contacts[data.sig].displayName = payloadArray[1][0];
         this.contacts[data.sig].profilePic = payloadArray[1][1];
 
@@ -203,7 +207,7 @@ class StatusJS {
         }
       }
     };
-    
+
 
     if(this.isHttpProvider){
       this.shh.newMessageFilter(filters)
@@ -263,7 +267,7 @@ class StatusJS {
       sig: _sig.get(this),
       ttl: constants.post.TTL,
       topic: this.channels[channelName].channelCode,
-      payload: createStatusPayload(msg, constants.messageTypes.GROUP_MESSAGE, this.channels[channelName].lastClockValue ),
+      payload: createStatusPayload(msg, constants.messageTypes.GROUP_MESSAGE, this.channels[channelName].lastClockValue),
       powTime: constants.post.POW_TIME,
       powTarget: constants.post.POW_TARGET
     }).then(() => {
