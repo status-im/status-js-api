@@ -114,11 +114,10 @@ class StatusJS {
     if (!this.isHttpProvider) {
       this.channels[channelName].subscription.unsubscribe();
     } else {
-      // TODO: fix me
-      // web3.shh.deleteMessageFilter(this.channels[channelName].filterId)
-      //  .then(result => {
-      //    clearInterval(this.channels[channelName].interval);
-      //  });
+      this.shh.deleteMessageFilter(this.channels[channelName].filterId)
+        .then(() => {
+          clearInterval(this.channels[channelName].interval);
+        });
     }
     delete this.channels[channelName];
   }
