@@ -1,7 +1,7 @@
 const Web3 = require("web3");
 import utils from "./utils.js";
 import mailservers from "./mailservers.js";
-const constants = require("./constants");
+import constants from "./constants.js";
 
 const { utils: { asciiToHex, hexToAscii  }  } = Web3;
 

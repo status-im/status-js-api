@@ -1,4 +1,7 @@
 import mailserverList from "./data/mailservers.json";
+import constants from "./constants.js";
+
+const Topics = constants.topics;
 
 class MailServers {
   private web3: any;
@@ -60,7 +63,7 @@ class MailServers {
     });
   }
 
-  public async requestMessages(topic: string, options: any, cb?: any) {
+  public async requestMessages(topic: string|Topics, options: any, cb?: any) {
     if (this.mailserver === "") {
       if (!cb) {
         return;
@@ -68,7 +71,7 @@ class MailServers {
       return cb("Mailserver is not set", false);
     }
 
-    const topics =   [this.web3.utils.sha3(topic).slice(0, 10)];
+    const topics = [(topic in Topics) ? Topics[topic] : this.web3.utils.sha3(topic).slice(0, 10)];
     const mailserverPeer = this.mailserver;
 
     const timeout = options.timeout || 30; // seconds

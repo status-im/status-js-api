@@ -1,3 +1,7 @@
+enum Topics {
+  CONTACT_DISCOVERY_TOPIC = '0xf8946aac'
+}
+
 module.exports = {
   post: {
     POW_TIME: 1,
@@ -12,10 +16,10 @@ module.exports = {
     message: "~#c4",
     chatRequest: "~#c2"
   },
-  topics: {
-    CONTACT_DISCOVERY_TOPIC: '0xf8946aac'
-  },
+  topics: Topics,
   regExp: {
     CONTACT_CODE_REGEXP: /^(0x)?[0-9a-f]{130}$/i
   }
 };
+
+

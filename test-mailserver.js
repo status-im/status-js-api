@@ -1,4 +1,4 @@
-var StatusJS = require('./src/index.js');
+var StatusJS = require('./dist/index.js');
 
 (async () => {
 var status = new StatusJS();
@@ -19,4 +19,4 @@ var status = new StatusJS();
   });
 
   setInterval(() => { }, 3000);
-})()
+})();
