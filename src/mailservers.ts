@@ -1,4 +1,3 @@
-import mailserverList from "./data/mailservers.json";
 import constants from "./constants.js";
 
 const Topics = constants.topics;
@@ -12,16 +11,7 @@ class MailServers {
     this.web3 = web3;
   }
 
-  public async useMailserver(mailserver: string, cb?: any) {
-    const enode: string = mailserverList[mailserver];
-
-    if (!enode) {
-      if (!cb) {
-        return;
-      }
-      cb("unknown mailserver: " + mailserver);
-    }
-
+  public async useMailserver(enode: string, cb?: any) {
     this.symKeyID = await this.web3.shh.generateSymKeyFromPassword("status-offline-inbox");
 
     this.web3.currentProvider.send({
@@ -63,7 +53,11 @@ class MailServers {
     });
   }
 
-  public async requestMessages(topic: string|Topics, options: any, cb?: any) {
+  public async requestUserMessages(options: any, cb?: any) {
+    await this.requestChannelMessages(constants.topics.CONTACT_DISCOVERY_TOPIC, options, cb);
+  }
+
+  public async requestChannelMessages(topic: string|Topics, options: any, cb?: any) {
     if (this.mailserver === "") {
       if (!cb) {
         return;
@@ -71,7 +65,8 @@ class MailServers {
       return cb("Mailserver is not set", false);
     }
 
-    const topics = [(topic in Topics) ? Topics[topic] : this.web3.utils.sha3(topic).slice(0, 10)];
+    const topics = [ topic.slice(0, 2) === "0x" ? topic : this.web3.utils.sha3(topic).slice(0, 10)];
+    
     const mailserverPeer = this.mailserver;
 
     const timeout = options.timeout || 30; // seconds
