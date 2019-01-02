@@ -2,9 +2,12 @@ var StatusJS = require('./dist/index.js');
 
 (async () => {
 var status = new StatusJS();
-  await status.connect("ws://localhost:8546", "0x0011223344556677889900112233445566778899001122334455667788990011");
- // await status.connect("/home/richard/.statusd/geth.ipc");
-console.log(await status.getPublicKey());
+  //await status.connect("ws://localhost:8546", "0x0011223344556677889900112233445566778899001122334455667788990011");
+
+   await status.connect("/home/richard/.statusd/geth.ipc", "0x0011223344556677889900112233445566778899001122334455667788990011");
+
+
+  console.log(await status.getPublicKey());
   const channel = "mytest";
   await status.joinChat(channel);
 
@@ -24,15 +27,14 @@ console.log(await status.getPublicKey());
   status.mailservers.useMailserver(enode, (err, res) => {
     
     // Group chats
-    let from = 1544783388; // unix timestamp
-    let to = 1544846928;
+    let from = parseInt((new Date()).getTime() / 1000 - 86400, 10);
+    let to = parseInt((new Date()).getTime() / 1000, 10);
+
     status.mailservers.requestChannelMessages(channel, {from, to}, (err, res) => { 
       if(err) console.log(err); 
     }); 
 
     // User messages
-    from = parseInt((new Date()).getTime() / 1000 - 6000, 10);
-    to = parseInt((new Date()).getTime() / 1000, 10);
     status.mailservers.requestUserMessages({from, to}, (err, res) => { 
       if(err) console.log(err); 
     });
