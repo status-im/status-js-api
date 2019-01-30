@@ -1,8 +1,9 @@
-const Web3 = require("web3");
+import web3Lib from "web3";
 import utils from "./utils.js";
 import mailservers from "./mailservers.js";
 import constants from "./constants.js";
 
+const Web3 = window && window.web3 ? new web3Lib(window.web3.currentProvider) : web3Lib;
 const { utils: { asciiToHex, hexToAscii  }  } = Web3;
 
 function createStatusPayload(content: string, messageType: string, clockValue: number, isJson = false) {
