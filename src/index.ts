@@ -67,8 +67,7 @@ class StatusJS {
   }
 
   public async connectToProvider(provider: any, privateKey: any) {
-    const web3: any = new web3Lib();
-    web3.setProvider(provider);
+    const web3: any = new web3Lib(provider);
 
     this.shh = web3.shh;
     this.mailservers = new mailservers(web3);
