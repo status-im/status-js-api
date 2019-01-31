@@ -73,7 +73,7 @@ class StatusJS {
     this.mailservers = new mailservers(web3);
 
     await web3.shh.setMinPoW(constants.post.POW_TARGET);
-    _sig.set(
+    sig.set(
       this,
       privateKey ? await this.generateWhisperKeyFromWallet(privateKey) : await web3.shh.newKeyPair(),
     );
