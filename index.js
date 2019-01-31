@@ -1,3 +1,3 @@
-const StatusJS = require('./dist/index.js');
+const StatusJS = require('./src/index.js');
 
 module.exports = StatusJS;

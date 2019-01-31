@@ -44,7 +44,7 @@ class StatusJS {
   }
 
   public async connect(url: string, privateKey?: string) {
-    const web3: any = new Web3();
+    const web3: any = new web3Lib();
     if (url.startsWith("ws://")) {
       web3.setProvider(new Web3.providers.WebsocketProvider(url, {headers: {Origin: "statusjs"}}));
     } else if (url.startsWith("http://") || url.startsWith("https://")) {
@@ -67,7 +67,7 @@ class StatusJS {
   }
 
   public async connectToProvider(provider: any, privateKey: any) {
-    const web3: any = new Web3();
+    const web3: any = new web3Lib();
     web3.setProvider(provider);
 
     this.shh = web3.shh;
