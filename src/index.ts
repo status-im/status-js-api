@@ -67,7 +67,7 @@ class StatusJS {
   }
 
   public async connectToProvider(provider: any, privateKey: any) {
-    let web3: any = new Web3();
+    const web3: any = new Web3();
     web3.setProvider(provider);
 
     this.shh = web3.shh;
@@ -76,7 +76,7 @@ class StatusJS {
     await web3.shh.setMinPoW(constants.post.POW_TARGET);
     _sig.set(
       this,
-      privateKey ? await this.generateWhisperKeyFromWallet(privateKey) : await web3.shh.newKeyPair()
+      privateKey ? await this.generateWhisperKeyFromWallet(privateKey) : await web3.shh.newKeyPair(),
     );
   }
 

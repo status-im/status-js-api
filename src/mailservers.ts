@@ -66,7 +66,7 @@ class MailServers {
     }
 
     const topics = [ topic.slice(0, 2) === "0x" ? topic : this.web3.utils.sha3(topic).slice(0, 10)];
-    
+
     const mailserverPeer = this.mailserver;
 
     const timeout = options.timeout || 30; // seconds
