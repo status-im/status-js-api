@@ -4,6 +4,7 @@
     "es6": true,
     "node": true
   },
+  "parser": "babel-eslint",
   "extends": [
     "eslint:recommended"
   ],
@@ -18,6 +19,7 @@
     "__": true
   },
   "plugins": [
+    "react"
   ],
   "rules": {
     "accessor-pairs": "error",
@@ -44,7 +46,7 @@
     "camelcase": "off",
     "capitalized-comments": "off",
     "class-methods-use-this": "off",
-    "comma-dangle": "off",
+    "comma-dangle": "error",
     "comma-spacing": "off",
     "comma-style": [
       "error",
@@ -87,10 +89,6 @@
     "key-spacing": "off",
     "keyword-spacing": "off",
     "line-comment-position": "off",
-    "linebreak-style": [
-      "error",
-      "unix"
-    ],
     "lines-around-comment": "error",
     "lines-around-directive": "error",
     "max-depth": "error",
