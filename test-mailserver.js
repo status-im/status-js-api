@@ -2,21 +2,19 @@ var StatusJS = require('./dist/index.js');
 
 (async () => {
 var status = new StatusJS();
-  //await status.connect("ws://localhost:8546", "0x0011223344556677889900112233445566778899001122334455667788990011");
-
-   await status.connect("/home/richard/.statusd/geth.ipc", "0x0011223344556677889900112233445566778899001122334455667788990011");
-
+  await status.connect("ws://localhost:8546", "0x0011223344556677889900112233445566778899001122334455667788990011");
+  // await status.connect("/home/richard/.statusd/geth.ipc", "0x0011223344556677889900112233445566778899001122334455667788990011");
 
   console.log(await status.getPublicKey());
   const channel = "mytest";
   await status.joinChat(channel);
 
   status.onMessage(channel, (err, data) => {
-    console.log(data.payload);
+    if(!err) console.log("PubMessage: " + data.payload);
   });
 
   status.onMessage((err, data) => {
-    console.log("PrivMessage: " + data.payload);
+    if(!err) console.log("PrivMessage: " + data.payload);
   });
 
 

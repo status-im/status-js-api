@@ -57,7 +57,7 @@ class MailServers {
     await this.requestChannelMessages(constants.topics.CONTACT_DISCOVERY_TOPIC, options, cb);
   }
 
-  public async requestChannelMessages(topic: string|Topics, options: any, cb?: any) {
+  public async requestChannelMessages(topic: string, options: any, cb?: any) {
     if (this.mailserver === "") {
       if (!cb) {
         return;

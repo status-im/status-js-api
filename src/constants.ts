@@ -2,7 +2,7 @@ enum Topics {
   CONTACT_DISCOVERY_TOPIC = "0xf8946aac",
 }
 
-module.exports = {
+export default {
   messageTags: {
     chatRequest: "~#c2",
     message: "~#c4",

@@ -1,9 +1,9 @@
 import web3Lib from "web3";
 import utils from "./utils.js";
-import mailservers from "./mailservers.js";
-import constants from "./constants.js";
+import mailservers from "./mailservers";
+import constants from "./constants";
 
-const Web3 = typeof window !== 'undefined' && window.web3 ? new web3Lib(window.web3.currentProvider) : web3Lib;
+const Web3 = typeof window !== "undefined" && window.web3 ? new web3Lib(window.web3.currentProvider) : web3Lib;
 const { utils: { asciiToHex, hexToAscii  }  } = Web3;
 
 function createStatusPayload(content: string, messageType: string, clockValue: number, isJson = false) {
@@ -168,12 +168,16 @@ class StatusJS {
     };
 
     const messageHandler = (data: any) => {
-      const username = utils.generateUsernameFromSeed(data.sig);
-      const payloadArray = JSON.parse(hexToAscii(data.payload));
-      if (this.channels[channelName].lastClockValue < payloadArray[1][3]) {
-        this.channels[channelName].lastClockValue = payloadArray[1][3];
+      try {
+        const username = utils.generateUsernameFromSeed(data.sig);
+        const payloadArray = JSON.parse(hexToAscii(data.payload));
+        if (this.channels[channelName].lastClockValue < payloadArray[1][3]) {
+          this.channels[channelName].lastClockValue = payloadArray[1][3];
+        }
+        cb(null, {payload: hexToAscii(data.payload), data, username});
+      } catch (err) {
+        cb("Discarding invalid message received");
       }
-      cb(null, {payload: hexToAscii(data.payload), data, username});
     };
 
     if (this.isHttpProvider) {
@@ -210,24 +214,28 @@ class StatusJS {
         this.addContact(data.sig);
       }
 
-      const payloadArray = JSON.parse(hexToAscii(data.payload));
-      if (this.contacts[data.sig].lastClockValue < payloadArray[1][3]) {
-        this.contacts[data.sig].lastClockValue = payloadArray[1][3];
-      }
-
-      if (payloadArray[0] === constants.messageTags.message) {
-        cb(null, {payload: hexToAscii(data.payload), data, username: this.contacts[data.sig].username});
-      } else if (payloadArray[0] === constants.messageTags.chatRequest) {
-        this.contacts[data.sig].displayName = payloadArray[1][0];
-        this.contacts[data.sig].profilePic = payloadArray[1][1];
-
-        if (this.chatRequestCb) {
-          this.chatRequestCb(null, {
-            displayName: this.contacts[data.sig].displayName,
-            profilePic: this.contacts[data.sig].profilePic,
-            username: this.contacts[data.sig].username,
-          });
+      try {
+        const payloadArray = JSON.parse(hexToAscii(data.payload));
+        if (this.contacts[data.sig].lastClockValue < payloadArray[1][3]) {
+          this.contacts[data.sig].lastClockValue = payloadArray[1][3];
         }
+
+        if (payloadArray[0] === constants.messageTags.message) {
+          cb(null, {payload: hexToAscii(data.payload), data, username: this.contacts[data.sig].username});
+        } else if (payloadArray[0] === constants.messageTags.chatRequest) {
+          this.contacts[data.sig].displayName = payloadArray[1][0];
+          this.contacts[data.sig].profilePic = payloadArray[1][1];
+
+          if (this.chatRequestCb) {
+            this.chatRequestCb(null, {
+              displayName: this.contacts[data.sig].displayName,
+              profilePic: this.contacts[data.sig].profilePic,
+              username: this.contacts[data.sig].username,
+            });
+          }
+        }
+      } catch (err) {
+        cb("Discarding invalid message received");
       }
     };
 
