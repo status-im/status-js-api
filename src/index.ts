@@ -7,7 +7,9 @@ declare global {
   interface Window { web3: any; }
 }
 
-if(typeof window !== "undefined") window.web3 = window.web3 || {};
+if (typeof window !== "undefined") {
+  window.web3 = window.web3 || {};
+}
 
 const Web3 = typeof window !== "undefined" && window.web3 ? new web3Lib(window.web3.currentProvider) : web3Lib;
 const { utils: { asciiToHex, hexToAscii  }  } = Web3;
