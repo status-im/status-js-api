@@ -296,7 +296,7 @@ status.addContact("0x1122...9900");
 
 Arguments
 * _pubKey_ - public key to add as a contact.
-* _cb_ -  a callback that will be called, possibly with an error, when the contact is added. If there is no error, the first argument will be null. Optional.
+* _cb_ - a callback that will be called, possibly with an error, when the contact is added. If there is no error, the first argument will be null. Optional.
 
 
 
@@ -316,19 +316,117 @@ Arguments
 
 
 
-
-## TODO
+## TODO: Create documentation for sending messages
 * sendUserMessage(contactCode, msg, [cb])
 * sendGroupMessage(channelName, msg, [cb]) 
 * sendJsonMessage(destination, msg, [cb])
 * sendMessage(destination, msg, [cb])
 
-* mailservers.useMailserver(enode, [cb])
-* mailservers.requestUserMessages(options, cb)
-* mailservers.requestChannelMessages(topic, options, cb)
 
 
-See the examples for usage in the meantime
+### mailservers.useMailserver
+Use a specific mailserver to obtain old messages. Active mailservers from Status.im can be found [here](https://fleets.status.im/)
+
+```javascript
+status.mailservers.useMailserver(enode, [cb]);
+```
+
+```javascript
+const enode = "enode://0011...aabb@111.222.33.44:30303";
+status.mailservers.useMailserver(enode, (err, res) => {
+  if (err) {
+    console.err("Error: " + err);
+    return;
+  }
+
+  // Do something
+});
+```
+
+Arguments
+* _enode_ - Mailserver enode address.
+* _cb_ - a callback that will be called, possibly with an error, when the mailserver is selected successfully. If there is no error, the first argument will be null. Optional.
+
+
+
+### mailservers.requestUserMessages
+Once a mailserver is selected, request old private messages. Messages will be received in the `onMessage` or `onUserMessage` handler.
+
+```javascript
+* mailservers.requestUserMessages(options, [cb])
+```
+
+```javascript
+const enode = "enode://0011...aabb@111.222.33.44:30303";
+status.mailservers.useMailserver(enode, (err, res) => {
+  if (err) {
+    console.err("Error: " + err);
+    return;
+  }
+  
+  const from = parseInt((new Date()).getTime() / 1000 - 86400, 10);
+  const to = parseInt((new Date()).getTime() / 1000, 10);
+  
+  // User messages
+  status.mailservers.requestUserMessages({from, to}, (err, res) => { 
+    if(err) 
+      console.log(err); 
+
+    // Do something
+  });
+});
+```
+
+Arguments
+* _options_ - an object containing parameters .
+* _cb_ - a callback that will be called, possibly with an error, when the old private messages are requested successfully. If there is no error, the first argument will be null. Optional.
+
+Options
+* _from_ - lower bound of time range as unix timestamp, default is 24 hours back from now.
+* _to_ - upper bound of time range as unix timestamp, default is now
+* _timeout_ - TODO: research this in `status-go`, default is 30
+* _limit_ - TODO: research this in `status-go`, default is 0
+
+
+
+### mailservers.requestChannelMessages
+Once a mailserver is selected, request old public messages for a channel. Messages will be received in the `onMessage` or `onChannelMessage` handler.
+
+```javascript
+* mailservers.requestChannelMessages(channel, [cb])
+```
+
+```javascript
+const enode = "enode://0011...aabb@111.222.33.44:30303";
+status.mailservers.useMailserver(enode, (err, res) => {
+  if (err) {
+    console.err("Error: " + err);
+    return;
+  }
+
+  const from = parseInt((new Date()).getTime() / 1000 - 86400, 10);
+  const to = parseInt((new Date()).getTime() / 1000, 10);
+
+  // Channel messages
+  status.mailservers.requestChannelMessages("mytest", {from, to}, (err, res) => { 
+    if(err) 
+      console.log(err); 
+
+    // Do something
+  });
+});
+```
+
+Arguments
+* _channel_ - channel name to obtain messages from. A 4 bytes hex topic can be used too.
+* _options_ - an object containing parameters .
+* _cb_ - a callback that will be called, possibly with an error, when the old private messages are requested successfully. If there is no error, the first argument will be null. Optional.
+
+Options
+* _from_ - lower bound of time range as unix timestamp, default is 24 hours back from now.
+* _to_ - upper bound of time range as unix timestamp, default is now
+* _timeout_ - TODO: research this in `status-go`, default is 30
+* _limit_ - TODO: research this in `status-go`, default is 0
 
 
 
