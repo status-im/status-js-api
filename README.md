@@ -47,7 +47,7 @@ See `status-go` [documentation](https://github.com/status-im/status-go) for addi
 
 
 ## API
-**constructor**
+### constructor
 Constructs a new status client object
 
 ```javascript
@@ -61,7 +61,7 @@ const status = new StatusJS();
 
 
 
-**connect**
+### connect
 Connect to a web3 whisper provider
 
 ```javascript
@@ -78,7 +78,7 @@ Arguments
 
 
 
-**connectToProvider**
+### connectToProvider
 Connect to a custom web3 whisper provider
 
 ```javascript
@@ -95,7 +95,7 @@ Arguments
 
 
 
-**isListening**
+### isListening
 Checks if the node is listening for peers.
 
 ```javascript
@@ -110,7 +110,7 @@ if (status.isListening()) {
 
 
 
-**joinChat**
+### joinChat
 Joins a public channel
 
 ```javascript
@@ -126,8 +126,51 @@ Arguments
 
 
 
-**onMessage**
-Process incoming public and private messages
+### onUserMessage
+Process incoming private messages
+
+```javascript
+status.onUserMessage(cb); // private messages
+```
+
+```javascript
+status.onUserMessage((err, data) => {
+  if(err) 
+    console.error(err);
+  else
+    console.dir(data); // message information
+});
+```
+
+Arguments
+* _cb_ -  a callback that will be called, possibly with an error, when a message is received. If there is no error, the first argument will be null.
+
+
+
+### onChannelMessage
+Process incoming public messages
+
+```javascript
+status.onChannelMessage(channel, cb); // public messages
+```
+
+```javascript
+status.onChannelMessage("#mytest", (err, data) => {
+  if(err) 
+    console.error(err);
+  else
+    console.dir(data); // message information
+});
+```
+
+Arguments
+* _channel_ - public channel name.
+* _cb_ -  a callback that will be called, possibly with an error, when a message is received. If there is no error, the first argument will be null.
+
+
+
+### onMessage
+Process both incoming public and private messages
 
 ```javascript
 status.onMessage(channel, cb); // public messages
@@ -149,7 +192,34 @@ Arguments
 
 
 
-**isSubscribedTo**
+### onChatRequest
+Process incoming chat requests messages from other users
+
+```javascript
+status.onChatRequest(cb);
+```
+
+```javascript
+status.onChatRequest((err, data) => {
+  if(err) 
+    console.error(err);
+  else
+    console.dir(data); 
+    // message information
+    // {
+    //    displayName, // Display Name
+    //    profilePic, // Base64 Profile picture
+    //    username // Random username (Adjective1 Adjective2 Animal)
+    // }
+});
+```
+
+Arguments
+* _cb_ -  a callback that will be called, possibly with an error, when a chat request is received. If there is no error, the first argument will be null.
+
+
+
+### isSubscribedTo
 Check if client has joined a channel
 
 ```javascript
@@ -167,7 +237,7 @@ Arguments
 
 
 
-**leaveChat**
+### leaveChat
 Leaves a public channel
 
 ```javascript
@@ -183,7 +253,7 @@ Arguments
 
 
 
-**getPublicKey**
+### getPublicKey
 Returns a string with the public key
 
 ```javascript
@@ -196,7 +266,7 @@ await status.getPublicKey(); // "0x1122...9900"
 
 
 
-**getUserName**
+### getUserName
 Returns the random username for the public key
 
 ```javascript
@@ -212,16 +282,47 @@ Arguments
 * _pubKey_ - public key to obtain the username. Default: generate username for the current user. Optional.
 
 
-### TODO
-* addContact(contactCode, cb) 
-* removeContact(contactCode)
-* onChatRequest(cb)
-* onChannelMessage(channelName, cb)
-* onUserMessage(cb) 
+
+### addContact
+Add a contact by pubKey. (TODO: send contact request msg)
+
+```javascript
+status.addContact(pubKey, [cb]);
+```
+
+```javascript
+status.addContact("0x1122...9900");
+```
+
+Arguments
+* _pubKey_ - public key to add as a contact.
+* _cb_ -  a callback that will be called, possibly with an error, when the contact is added. If there is no error, the first argument will be null. Optional.
+
+
+
+### removeContact
+Remove a contact by pubKey.
+
+```javascript
+status.removeContact(pubKey);
+```
+
+```javascript
+status.removeContact("0x1122...9900");
+```
+
+Arguments
+* _pubKey_ - public key to remove from known contacts.
+
+
+
+
+## TODO
 * sendUserMessage(contactCode, msg, [cb])
 * sendGroupMessage(channelName, msg, [cb]) 
 * sendJsonMessage(destination, msg, [cb])
 * sendMessage(destination, msg, [cb])
+
 * mailservers.useMailserver(enode, [cb])
 * mailservers.requestUserMessages(options, cb)
 * mailservers.requestChannelMessages(topic, options, cb)
