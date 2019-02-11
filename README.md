@@ -9,8 +9,230 @@ Javascript client for sending / receiving messages in Status
 </p>
 <br />
 
-## Install
-clone the repo via git:
+
+
+## Installation
+
+```
+npm install status-js-api
+```
+Alternatively, you can use `yarn`.
+
+## Usage
+
+### Requirements
+This package requires `geth`, `status-go`, or `murmur` to be able to connect to Whisper v6.
+
+#### Using `geth`
+
+Use the following command and flags to start `geth`
+
+```
+$ geth --testnet --syncmode=light --ws --wsport=8546 --wsaddr=localhost --wsorigins=statusjs --rpc --maxpeers=25 --shh --shh.pow=0.002 --wsapi=web3,shh,admin
+```
+
+Also, due to the lack of nodes with Whisper enabled, you need to create a [static-nodes.json](https://github.com/status-im/status-js/blob/master/static-nodes.json) file, that must be placed in a specific path (if using `ropsten` in a linux environment, `~/.ethereum/testnet/geth/static-nodes.json`
+
+#### Using `murmur`
+```
+$ murmur-client --ws --no-bridge
+```
+See `murmur` [documentation](https://github.com/status-im/murmur) for additional details.
+
+#### Using `status-go`
+```
+$ /path/to/status-go/statusd
+```
+See `status-go` [documentation](https://github.com/status-im/status-go) for additional details. 
+
+
+## API
+**constructor**
+Constructs a new status client object
+
+```javascript
+new StatusJS();
+```
+```javascript
+// basic instantiation
+const StatusJS = require('status-js-api');
+const status = new StatusJS();
+```
+
+
+
+**connect**
+Connect to a web3 whisper provider
+
+```javascript
+status.connect(url, [privateKey]);
+```
+
+```javascript
+await status.connect("ws://localhost:8546", "0x1122...9900");
+```
+
+Arguments
+* _url_ - an address of a valid http, websocket or ipc provider.
+* _privateKey_ - private key of the user that will send / receive messages. It will be added to the whisper node. Default: random private key. Optional
+
+
+
+**connectToProvider**
+Connect to a custom web3 whisper provider
+
+```javascript
+status.connectToProvider(provider, [privateKey]);
+```
+
+```javascript
+await status.connect(murmurClient.provider, "0x1122...9900");
+```
+
+Arguments
+* _provider_ - Custom web3 provider
+* _privateKey_ - private key of the user that will send / receive messages. It will be added to the whisper node. Default: random private key. Optional
+
+
+
+**isListening**
+Checks if the node is listening for peers.
+
+```javascript
+status.isListening()
+```
+
+```javascript
+if (status.isListening()) {
+  // Do something
+}
+```
+
+
+
+**joinChat**
+Joins a public channel
+
+```javascript
+status.joinChat(channel);
+```
+
+```javascript
+await status.joinChat("#mytest");
+```
+
+Arguments
+* _channel_ - public channel name.
+
+
+
+**onMessage**
+Process incoming public and private messages
+
+```javascript
+status.onMessage(channel, cb); // public messages
+status.onMessage(cb); // private messages
+```
+
+```javascript
+status.onMessage("#mytest", (err, data) => {
+  if(err) 
+    console.error(err);
+  else
+    console.dir(data); // message information
+});
+```
+
+Arguments
+* _channel_ - public channel name. Optional
+* _cb_ -  a callback that will be called, possibly with an error, when a message is received. If there is no error, the first argument will be null.
+
+
+
+**isSubscribedTo**
+Check if client has joined a channel
+
+```javascript
+status.isSubscribedTo(channel);
+```
+
+```javascript
+if (status.isSubscribedTo("#mytest")) {
+  // Do something
+}
+```
+
+Arguments
+* _channel_ - public channel name.
+
+
+
+**leaveChat**
+Leaves a public channel
+
+```javascript
+status.leaveChat(channel);
+```
+
+```javascript
+status.leaveChat("#mytest");
+```
+
+Arguments
+* _channel_ - public channel name.
+
+
+
+**getPublicKey**
+Returns a string with the public key
+
+```javascript
+status.getPublicKey();
+```
+
+```javascript
+await status.getPublicKey(); // "0x1122...9900"
+```
+
+
+
+**getUserName**
+Returns the random username for the public key
+
+```javascript
+status.getUserName([pubKey]);
+```
+
+```javascript
+await status.getUserName(); // "Adjective1 Adjective2 Animal"
+await status.getUserName("0x1122...9900");
+```
+
+Arguments
+* _pubKey_ - public key to obtain the username. Default: generate username for the current user. Optional.
+
+
+### TODO
+* addContact(contactCode, cb) 
+* removeContact(contactCode)
+* onChatRequest(cb)
+* onChannelMessage(channelName, cb)
+* onUserMessage(cb) 
+* sendUserMessage(contactCode, msg, [cb])
+* sendGroupMessage(channelName, msg, [cb]) 
+* sendJsonMessage(destination, msg, [cb])
+* sendMessage(destination, msg, [cb])
+* mailservers.useMailserver(enode, [cb])
+* mailservers.requestUserMessages(options, cb)
+* mailservers.requestChannelMessages(topic, options, cb)
+
+
+See the examples for usage in the meantime
+
+
+
+## Development
+Clone the repo via git:
 ```
 $ git clone https://github.com/status-im/status-js.git
 ```
@@ -25,17 +247,6 @@ To develop:
 $ yarn run start
 $ yarn run lint
 ````
-
-`status-js` requires `geth` or `murmur` to be able to connect to Whisper. If using `geth`, you may start it with the following flags.
-
-`geth --testnet --syncmode=light --ws --wsport=8546 --wsaddr=localhost --wsorigins=statusjs --rpc --maxpeers=25 --shh --shh.pow=0.002 --wsapi=eth,web3,net,shh,debug,admin`
-
-Also, due to the lack of nodes with Whisper enabled, you need to create a [static-nodes.json](https://github.com/status-im/murmur/blob/master/src/data/static-nodes.json) file, that must be placed in a specific path (if using testnet and Linux, `~/.ethereum/testnet/geth/static-nodes.json`
-
-## API
-*TODO*
-See test files for use in the meantime
-
 
 ## Contribution
 

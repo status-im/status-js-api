@@ -109,7 +109,14 @@ class StatusJS {
     return utils.generateUsernameFromSeed(pubKey);
   }
 
+  private cleanChannelName(c: string) {
+    if(c.startsWith('#')) return c.substr(1);
+    return c;
+  }
+
   public async joinChat(channelName: string, cb?: any) {
+    channelName = this.cleanChannelName(channelName);
+
     const channelKey = await this.shh.generateSymKeyFromPassword(channelName);
     this.channels[channelName] = {
       channelCode: Web3.utils.sha3(channelName).slice(0, 10),
@@ -133,6 +140,8 @@ class StatusJS {
   }
 
   public leaveChat(channelName: string) {
+    channelName = this.cleanChannelName(channelName);
+
     if (!this.isHttpProvider) {
       this.channels[channelName].subscription.unsubscribe();
     } else {
@@ -149,6 +158,7 @@ class StatusJS {
   }
 
   public isSubscribedTo(channelName: string) {
+    channelName = this.cleanChannelName(channelName);
     return !!this.channels[channelName];
   }
 
@@ -165,6 +175,8 @@ class StatusJS {
   }
 
   public onChannelMessage(channelName: string, cb: any) {
+    channelName = this.cleanChannelName(channelName);
+
     if (!this.channels[channelName]) {
       return cb("unknown channel: " + channelName);
     }
@@ -297,6 +309,7 @@ class StatusJS {
   }
 
   public sendGroupMessage(channelName: string, msg: string, cb?: any) {
+    channelName = this.cleanChannelName(channelName);
     if (!this.channels[channelName]) {
       if (!cb) {
         return;
