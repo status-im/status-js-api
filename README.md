@@ -253,6 +253,62 @@ Arguments
 
 
 
+### sendGroupMessage
+Send a message to a public channel
+
+```javascript
+status.sendGroupMessage(channel, message, [cb]);
+```
+
+```javascript
+status.sendGroupMessage("#mytest", "Hello world!",  (err, data) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
+
+  // Do something  
+});
+```
+
+Arguments
+* _channel_ - public channel name.
+* _msg_ - message to send
+* _cb_ -  a callback that will be called, possibly with an error, when a message is sent. If there is no error, the first argument will be null.
+
+
+
+### sendUserMessage
+Send a message to a contact code
+
+```javascript
+status.sendUserMessage(pubKey, message, [cb]);
+```
+
+```javascript
+status.sendUserMessage("0x1122...9900", "Hello world!",  (err, data) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
+
+  // Do something  
+});
+```
+
+Arguments
+* _pubKey_ - user public key
+* _msg_ - message to send
+* _cb_ -  a callback that will be called, possibly with an error, when a message is sent. If there is no error, the first argument will be null.
+
+
+
+## TODO: Create documentation for sending messages
+* sendJsonMessage(destination, msg, [cb])
+* sendMessage(destination, msg, [cb])
+
+
+
 ### getPublicKey
 Returns a string with the public key
 
@@ -313,14 +369,6 @@ status.removeContact("0x1122...9900");
 
 Arguments
 * _pubKey_ - public key to remove from known contacts.
-
-
-
-## TODO: Create documentation for sending messages
-* sendUserMessage(contactCode, msg, [cb])
-* sendGroupMessage(channelName, msg, [cb]) 
-* sendJsonMessage(destination, msg, [cb])
-* sendMessage(destination, msg, [cb])
 
 
 

@@ -1,4 +1,4 @@
-const StatusJS = require('./dist/index.js');
+const StatusJS = require('../dist/index.js');
 
 (async () => {
   const status = new StatusJS();
