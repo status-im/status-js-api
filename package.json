@@ -1,6 +1,6 @@
 {
   "name": "status-js-api",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -36,6 +36,7 @@
   "homepage": "https://github.com/status-im/status-js#readme",
   "dependencies": {
     "bip39": "^2.5.0",
+    "bourne": "^1.1.2",
     "chance": "^1.0.16",
     "ethereum-hdwallet": "0.0.19",
     "ethereumjs-util": "^6.0.0",
