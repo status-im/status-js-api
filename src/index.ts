@@ -12,7 +12,7 @@ if (typeof window !== "undefined") {
 }
 
 const Web3 = typeof window !== "undefined" && window.web3 ? new web3Lib(window.web3.currentProvider) : web3Lib;
-const { utils: { asciiToHex, hexToAscii  }  } = Web3;
+const { utils: { stringToHex, hexToUtf8  }  } = Web3;
 
 function createStatusPayload(content: string, messageType: string, clockValue: number, isJson = false) {
   const tag: string = constants.messageTags.message;
@@ -24,7 +24,7 @@ function createStatusPayload(content: string, messageType: string, clockValue: n
   const contentType = (isJson ? "content/json" : "text/plain");
   const timestamp = new Date().getTime();
 
-  return asciiToHex(
+  return stringToHex(
     JSON.stringify([
       tag,
       [content, contentType, messageType, clockValue, timestamp, ["^ ", "~:text", content]],
@@ -190,11 +190,11 @@ class StatusJS {
     const messageHandler = (data: any) => {
       try {
         const username = utils.generateUsernameFromSeed(data.sig);
-        const payloadArray = JSON.parse(hexToAscii(data.payload));
+        const payloadArray = JSON.parse(hexToUtf8(data.payload));
         if (this.channels[channelName].lastClockValue < payloadArray[1][3]) {
           this.channels[channelName].lastClockValue = payloadArray[1][3];
         }
-        cb(null, {payload: hexToAscii(data.payload), data, username});
+        cb(null, {payload: hexToUtf8(data.payload), data, username});
       } catch (err) {
         cb("Discarding invalid message received");
       }
@@ -235,13 +235,13 @@ class StatusJS {
       }
 
       try {
-        const payloadArray = JSON.parse(hexToAscii(data.payload));
+        const payloadArray = JSON.parse(hexToUtf8(data.payload));
         if (this.contacts[data.sig].lastClockValue < payloadArray[1][3]) {
           this.contacts[data.sig].lastClockValue = payloadArray[1][3];
         }
 
         if (payloadArray[0] === constants.messageTags.message) {
-          cb(null, {payload: hexToAscii(data.payload), data, username: this.contacts[data.sig].username});
+          cb(null, {payload: hexToUtf8(data.payload), data, username: this.contacts[data.sig].username});
         } else if (payloadArray[0] === constants.messageTags.chatRequest) {
           this.contacts[data.sig].displayName = payloadArray[1][0];
           this.contacts[data.sig].profilePic = payloadArray[1][1];
