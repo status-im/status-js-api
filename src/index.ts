@@ -2,6 +2,7 @@ import web3Lib from "web3";
 import utils from "./utils.js";
 import mailservers from "./mailservers";
 import constants from "./constants";
+import Bourne from "bourne";
 
 declare global {
   interface Window { web3: any; }
@@ -190,7 +191,7 @@ class StatusJS {
     const messageHandler = (data: any) => {
       try {
         const username = utils.generateUsernameFromSeed(data.sig);
-        const payloadArray = JSON.parse(hexToUtf8(data.payload));
+        const payloadArray = Bourne.parse(hexToUtf8(data.payload));
         if (this.channels[channelName].lastClockValue < payloadArray[1][3]) {
           this.channels[channelName].lastClockValue = payloadArray[1][3];
         }
@@ -235,7 +236,7 @@ class StatusJS {
       }
 
       try {
-        const payloadArray = JSON.parse(hexToUtf8(data.payload));
+        const payloadArray = Bourne.parse(hexToUtf8(data.payload));
         if (this.contacts[data.sig].lastClockValue < payloadArray[1][3]) {
           this.contacts[data.sig].lastClockValue = payloadArray[1][3];
         }
