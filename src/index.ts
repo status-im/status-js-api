@@ -3,6 +3,7 @@ import utils from "./utils.js";
 import mailservers from "./mailservers";
 import constants from "./constants";
 import Bourne from "bourne";
+import transit from "transit-js";
 
 declare global {
   interface Window { web3: any; }
@@ -14,6 +15,8 @@ if (typeof window !== "undefined") {
 
 const Web3 = typeof window !== "undefined" && window.web3 ? new web3Lib(window.web3.currentProvider) : web3Lib;
 const { utils: { stringToHex, hexToUtf8  }  } = Web3;
+const reader = transit.reader("json");
+const writer = transit.writer("json");
 
 function createStatusPayload(content: string, messageType: string, clockValue: number, isJson = false) {
   const tag: string = constants.messageTags.message;
@@ -24,13 +27,7 @@ function createStatusPayload(content: string, messageType: string, clockValue: n
 
   const contentType = (isJson ? "content/json" : "text/plain");
   const timestamp = new Date().getTime();
-
-  return stringToHex(
-    JSON.stringify([
-      tag,
-      [content, contentType, messageType, clockValue, timestamp, ["^ ", "~:text", content]],
-    ]),
-  );
+  return stringToHex(writer.write([tag, [content, contentType, messageType, clockValue, timestamp, content]]));
 }
 
 const sig = new WeakMap();
@@ -42,7 +39,7 @@ class StatusJS {
   private mailservers: any;
   private isHttpProvider: boolean;
   private shh: any;
-  private chatRequestCb: any;
+  private contactRequestCb: any;
 
   constructor() {
     this.channels = {};
@@ -171,8 +168,8 @@ class StatusJS {
     }
   }
 
-  public onChatRequest(cb: any) {
-    this.chatRequestCb = cb;
+  public onContactRequest(cb: any) {
+    this.contactRequestCb = cb;
   }
 
   public onChannelMessage(channelName: string, cb: any) {
@@ -191,11 +188,12 @@ class StatusJS {
     const messageHandler = (data: any) => {
       try {
         const username = utils.generateUsernameFromSeed(data.sig);
-        const payloadArray = Bourne.parse(hexToUtf8(data.payload));
-        if (this.channels[channelName].lastClockValue < payloadArray[1][3]) {
-          this.channels[channelName].lastClockValue = payloadArray[1][3];
+        const payload = reader.read(hexToUtf8(data.payload));
+        const clockValue = payload[1][3];
+        if (this.channels[channelName].lastClockValue < clockValue) {
+          this.channels[channelName].lastClockValue = clockValue;
         }
-        cb(null, {payload: hexToUtf8(data.payload), data, username});
+        cb(null, {payload: payload, data, username});
       } catch (err) {
         cb("Discarding invalid message received");
       }
@@ -236,19 +234,21 @@ class StatusJS {
       }
 
       try {
-        const payloadArray = Bourne.parse(hexToUtf8(data.payload));
-        if (this.contacts[data.sig].lastClockValue < payloadArray[1][3]) {
-          this.contacts[data.sig].lastClockValue = payloadArray[1][3];
+        const payload = reader.read(hexToUtf8(data.payload));
+        const tag = payload[0];
+        const clockValue = payload[1][3];
+        if (this.contacts[data.sig].lastClockValue < clockValue) {
+          this.contacts[data.sig].lastClockValue = clockValue;
         }
 
-        if (payloadArray[0] === constants.messageTags.message) {
-          cb(null, {payload: hexToUtf8(data.payload), data, username: this.contacts[data.sig].username});
-        } else if (payloadArray[0] === constants.messageTags.chatRequest) {
-          this.contacts[data.sig].displayName = payloadArray[1][0];
-          this.contacts[data.sig].profilePic = payloadArray[1][1];
+        if (tag === constants.messageTags.message) {
+          cb(null, {payload: payload, data, username: this.contacts[data.sig].username});
+        } else if (tag === constants.messageTags.contactRequest) {
+          this.contacts[data.sig].displayName = payload[1][0];
+          this.contacts[data.sig].profilePic = payload[1][1];
 
-          if (this.chatRequestCb) {
-            this.chatRequestCb(null, {
+          if (this.contactRequestCb) {
+            this.contactRequestCb(null, {
               displayName: this.contacts[data.sig].displayName,
               profilePic: this.contacts[data.sig].profilePic,
               username: this.contacts[data.sig].username,

@@ -4,12 +4,12 @@ enum Topics {
 
 export default {
   messageTags: {
-    chatRequest: "~#c2",
-    message: "~#c4",
+    contactRequest: "c2",
+    message: "c4",
   },
   messageTypes: {
-    GROUP_MESSAGE: "~:public-group-user-message",
-    USER_MESSAGE:  "~:user-message",
+    GROUP_MESSAGE: "public-group-user-message",
+    USER_MESSAGE:  "user-message",
   },
   post: {
     POW_TARGET: 0.002,
