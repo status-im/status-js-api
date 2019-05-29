@@ -13,13 +13,37 @@ if (typeof window !== "undefined") {
   window.web3 = window.web3 || {};
 }
 
+class Message {
+  public content: string;
+  public contentType: string;
+  public messageType: string;
+  public clockValue: number;
+  public timestamp: number;
+
+  constructor(content: string, contentType: string, messageType: string, clockValue: number, timestamp: number){
+    this.content = content;
+    this.contentType = contentType;
+    this.messageType = messageType;
+    this.clockValue = clockValue;
+    this.timestamp = timestamp;
+  }
+}
+
+const mh = transit.makeWriteHandler({
+  tag: function() { return constants.messageTags.message; },
+  rep: function(v) { return [v.content, v.contentType, transit.keyword(v.messageType), v.clockValue, v.timestamp]; },
+  stringRep: function() { return null; }
+})
+
 const Web3 = typeof window !== "undefined" && window.web3 ? new web3Lib(window.web3.currentProvider) : web3Lib;
 const { utils: { stringToHex, hexToUtf8  }  } = Web3;
+// TODO: create a transit-js reader
 const reader = transit.reader("json");
-const writer = transit.writer("json");
+const writer = transit.writer("json", {
+  "handlers": transit.map([Message, mh])
+});
 
 function createStatusPayload(content: string, messageType: string, clockValue: number, isJson = false) {
-  const tag: string = constants.messageTags.message;
   const oneMonthInMs: number = 60 * 60 * 24 * 31 * 1000;
   if (clockValue < (new Date().getTime())) {
     clockValue = (new Date().getTime() + oneMonthInMs) * 100;
@@ -27,7 +51,11 @@ function createStatusPayload(content: string, messageType: string, clockValue: n
 
   const contentType = (isJson ? "content/json" : "text/plain");
   const timestamp = new Date().getTime();
-  return stringToHex(writer.write([tag, [content, contentType, messageType, clockValue, timestamp, content]]));
+
+  const message = new Message(content, contentType, messageType, clockValue, timestamp);
+  const payload = writer.write(message);
+
+  return stringToHex(payload);
 }
 
 const sig = new WeakMap();
@@ -189,11 +217,11 @@ class StatusJS {
       try {
         const username = utils.generateUsernameFromSeed(data.sig);
         const payload = reader.read(hexToUtf8(data.payload));
-        const clockValue = payload[1][3];
+        const clockValue = payload.rep[3];
         if (this.channels[channelName].lastClockValue < clockValue) {
           this.channels[channelName].lastClockValue = clockValue;
         }
-        cb(null, {payload: payload, data, username});
+        cb(null, {payload: [payload.rep[0], payload.rep[1], payload.rep[2]._name, payload.rep[3], payload.rep[4]], data, username});
       } catch (err) {
         cb("Discarding invalid message received");
       }
@@ -235,17 +263,17 @@ class StatusJS {
 
       try {
         const payload = reader.read(hexToUtf8(data.payload));
-        const tag = payload[0];
-        const clockValue = payload[1][3];
+        const tag = payload.tag;
+        const clockValue = payload.rep[3];
         if (this.contacts[data.sig].lastClockValue < clockValue) {
           this.contacts[data.sig].lastClockValue = clockValue;
         }
 
         if (tag === constants.messageTags.message) {
-          cb(null, {payload: payload, data, username: this.contacts[data.sig].username});
+          cb(null, {payload: [payload.rep[0], payload.rep[1], payload.rep[2]._name, payload.rep[3], payload.rep[4]], data, username: this.contacts[data.sig].username});
         } else if (tag === constants.messageTags.contactRequest) {
-          this.contacts[data.sig].displayName = payload[1][0];
-          this.contacts[data.sig].profilePic = payload[1][1];
+          this.contacts[data.sig].displayName = payload.rep[0];
+          this.contacts[data.sig].profilePic = payload.rep[1];
 
           if (this.contactRequestCb) {
             this.contactRequestCb(null, {
