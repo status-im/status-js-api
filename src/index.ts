@@ -43,13 +43,12 @@ const writer = transit.writer("json", {
   "handlers": transit.map([Message, mh])
 });
 
-function createStatusPayload(content: string, messageType: string, clockValue: number, isJson = false) {
+function createStatusPayload(content: any, messageType: string, clockValue: number, contentType: string) {
   const oneMonthInMs: number = 60 * 60 * 24 * 31 * 1000;
   if (clockValue < (new Date().getTime())) {
     clockValue = (new Date().getTime() + oneMonthInMs) * 100;
   }
 
-  const contentType = (isJson ? "content/json" : "text/plain");
   const timestamp = new Date().getTime();
 
   const message = new Message(content, contentType, messageType, clockValue, timestamp);
@@ -317,7 +316,8 @@ class StatusJS {
     this.contacts[contactCode].lastClockValue++;
 
     this.shh.post({
-      payload: createStatusPayload(msg, constants.messageTypes.USER_MESSAGE, this.contacts[contactCode].lastClockValue),
+      payload: createStatusPayload(msg, constants.messageTypes.USER_MESSAGE, this.contacts[contactCode].lastClockValue,
+                                   constants.contentType.TEXT),
       powTarget: constants.post.POW_TARGET,
       powTime: constants.post.POW_TIME,
       pubKey: contactCode,
@@ -349,7 +349,8 @@ class StatusJS {
     this.channels[channelName].lastClockValue++;
 
     this.shh.post({
-      payload: createStatusPayload(msg, constants.messageTypes.GROUP_MESSAGE, this.channels[channelName].lastClockValue),
+      payload: createStatusPayload(msg, constants.messageTypes.GROUP_MESSAGE, this.channels[channelName].lastClockValue,
+                                   constants.contentType.TEXT),
       powTarget: constants.post.POW_TARGET,
       powTime: constants.post.POW_TIME,
       sig: sig.get(this),
@@ -377,7 +378,8 @@ class StatusJS {
       this.contacts[destination].lastClockValue++;
 
       this.shh.post({
-        payload: createStatusPayload(msg, constants.messageTypes.USER_MESSAGE, this.contacts[destination].lastClockValue, true),
+        payload: createStatusPayload(msg, constants.messageTypes.USER_MESSAGE, this.contacts[destination].lastClockValue,
+                                     constants.contentType.JSON),
         powTarget: constants.post.POW_TARGET,
         powTime: constants.post.POW_TIME,
         pubKey: destination,
@@ -399,7 +401,8 @@ class StatusJS {
       this.channels[destination].lastClockValue++;
 
       this.shh.post({
-        payload: createStatusPayload(JSON.stringify(msg), constants.messageTypes.GROUP_MESSAGE, this.channels[destination].lastClockValue, true),
+        payload: createStatusPayload(JSON.stringify(msg), constants.messageTypes.GROUP_MESSAGE,
+                                     this.channels[destination].lastClockValue, constants.contentType.JSON),
         powTarget: constants.post.POW_TARGET,
         powTime: constants.post.POW_TIME,
         sig: sig.get(this),
@@ -428,6 +431,33 @@ class StatusJS {
     }
   }
 
+  public sendContent(contactCode: string, content: any, contentType: string, cb?: any) {
+    if (!this.contacts[contactCode]) {
+      this.addContact(contactCode);
+    }
+    this.contacts[contactCode].lastClockValue++;
+
+    this.shh.post({
+      payload: createStatusPayload(content, constants.messageTypes.USER_MESSAGE, this.contacts[contactCode].lastClockValue,
+                                   contentType),
+      powTarget: constants.post.POW_TARGET,
+      powTime: constants.post.POW_TIME,
+      pubKey: contactCode,
+      sig: sig.get(this),
+      topic: constants.topics.CONTACT_DISCOVERY_TOPIC,
+      ttl: constants.post.TTL,
+    }).then(() => {
+      if (!cb) {
+        return;
+      }
+      cb(null, true);
+    }).catch((e: any) => {
+      if (!cb) {
+        return;
+      }
+      cb(e, false);
+    });
+  }
 }
 
 module.exports = StatusJS;

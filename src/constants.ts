@@ -19,5 +19,9 @@ export default {
   regExp: {
     CONTACT_CODE_REGEXP: /^(0x)?[0-9a-f]{130}$/i,
   },
+  contentType: {
+    JSON: "content/json",
+    TEXT: "text/plain"
+  },
   topics: Topics,
 };
